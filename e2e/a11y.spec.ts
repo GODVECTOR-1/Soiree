@@ -70,9 +70,14 @@ test('landing page is accessible with zero CSP violations', async ({ page }) => 
   const carousel = page.getByRole('region', { name: /Celebration photos/ })
   await carousel.getByRole('button', { name: 'Pause slideshow' }).click()
   await expect(carousel.getByRole('button', { name: 'Play slideshow' })).toBeVisible()
+  // It may have moved on its own before the pause (slow runners), so step on from wherever it stopped, once any
+  // move in flight has finished (moves ignore input for 0.6 s).
+  await page.waitForTimeout(700)
+  const shown = carousel.getByRole('group') // hidden slides are out of the accessibility tree
+  const at = Number((await shown.getAttribute('aria-label'))?.split(' ')[0])
   await carousel.focus()
   await page.keyboard.press('ArrowRight')
-  await expect(carousel.getByRole('group', { name: '2 of 8' })).toBeVisible()
+  await expect(shown).toHaveAccessibleName(`${(at % 8) + 1} of 8`)
   expect(problems).toEqual([])
 })
 
