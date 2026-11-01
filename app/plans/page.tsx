@@ -3,10 +3,11 @@
 import { useReducer } from 'react'
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { samples, type EventType } from '@/lib/schemas'
+import { EVENT_TYPES } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 import { forgetPlan, listLocalPlans, type LocalPlan } from '@/lib/local-plans'
 import { money, shortDate } from '@/lib/format'
-import { useHydrated } from '@/lib/use-hydrated'
+import { useHydrated } from '@/hooks/use-hydrated'
 import { eventLabels } from '@/lib/event-theme'
 
 type ListProps = {
@@ -85,7 +86,7 @@ export default function PlansPage() {
 
         <h2 className="eyebrow">Or explore a sample</h2>
         <div className="choice-grid sample-grid">
-          {(Object.keys(samples) as EventType[]).map((key) => {
+          {EVENT_TYPES.map((key) => {
             const s = samples[key]
             return (
               <Link className="sample-card" href={`/plan/demo-${key}`} key={key} data-event={key}>

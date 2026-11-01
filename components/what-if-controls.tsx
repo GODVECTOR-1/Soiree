@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { ArrowRight } from 'lucide-react'
-import type { PlanInput, ScenarioInput } from '@/lib/schemas'
+import { LIMITS, type PlanInput, type ScenarioInput } from '@/lib/schemas'
 import { categories } from '@/lib/categories'
-import { MAX_PRIORITIES, togglePriority } from '@/lib/plan-form'
+import { togglePriority } from '@/lib/plan-form'
 
 /** Run a scenario; `label` marks which preset is active. Resolves true when the server returned a draft. */
 export type RunScenario = (s: ScenarioInput, label?: string) => Promise<boolean>
@@ -26,7 +26,7 @@ function presetsFor(input: PlanInput) {
     {
       label: 'Add 20 guests',
       s: { kind: 'guest_change', value: input.guestCount + 20 },
-      hidden: input.guestCount + 20 > 5000,
+      hidden: input.guestCount + 20 > LIMITS.maxGuests,
     },
     {
       label: 'Halve the guest list',
@@ -58,7 +58,7 @@ function PriorityPicker({ input, busy, run, picked, onPick }: PickerProps) {
               key={c}
               className="chip"
               aria-pressed={rank >= 0}
-              aria-disabled={rank < 0 && picked.length >= MAX_PRIORITIES ? true : undefined}
+              aria-disabled={rank < 0 && picked.length >= LIMITS.maxPriorities ? true : undefined}
               onClick={() => onPick(togglePriority(picked, c))}
             >
               {rank >= 0 && <b>{rank + 1}. </b>}
@@ -131,7 +131,7 @@ function GuestSlider({ input, busy, run }: ControlProps) {
         <input
           type="range"
           min={Math.max(1, Math.round(input.guestCount * 0.5))}
-          max={Math.min(5000, Math.round(input.guestCount * 2))}
+          max={Math.min(LIMITS.maxGuests, Math.round(input.guestCount * 2))}
           value={guests}
           onChange={(e) => setGuests(Number(e.target.value))}
         />
@@ -164,7 +164,7 @@ function CustomScenario({ busy, run }: ControlProps) {
         <span>Or describe a change in your own words</span>
         <input
           value={text}
-          maxLength={300}
+          maxLength={LIMITS.messageChars}
           onChange={(e) => setText(e.target.value)}
           placeholder="What if we cut the budget by 15%?"
         />

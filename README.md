@@ -39,7 +39,7 @@ Open <http://localhost:3000>. The fake provider is deterministic and the memory 
 | Command | What it does |
 |---|---|
 | `pnpm dev` / `pnpm build` / `pnpm start` | Next.js 16 |
-| `pnpm typecheck` / `pnpm lint` | TypeScript strict; ESLint with size and complexity limits (complexity 12, 80-line functions, 250-line files) |
+| `pnpm typecheck` / `pnpm lint` | TypeScript strict; ESLint with size and complexity limits (complexity 12, 80-line functions, 250-line files), no type assertions, and strict `jsx-a11y` |
 | `pnpm format` / `pnpm format:check` | Prettier (the check runs in CI) |
 | `pnpm test` / `pnpm test:coverage` | Unit, property, service, route, security and component tests (fakes only, no network) |
 | `pnpm e2e` | Playwright + axe (WCAG 2.2 AA and best practices, any impact) against the real routes with keyless providers (run `pnpm build` first) |
@@ -67,7 +67,10 @@ flowchart LR
 
 - `lib/domain/` is pure and shared by browser and server: templates, allocator, timeline, vendors, ideas, scenarios,
   diff, actions. Browser helpers sit beside it: `lib/api.ts` (typed client), `lib/plan-form.ts` (wizard rules),
-  `lib/event-theme.ts` (event names and colours), `lib/local-plans.ts` (plans on this device).
+  `lib/event-theme.ts` (event names and colours), `lib/local-plans.ts` (plans on this device). Input limits live
+  once in `LIMITS` in `lib/schemas.ts`; demo plans in `lib/samples.ts`.
+- `components/` holds the UI (one file per plan view, the wizard steps in `components/wizard/`), `hooks/` its state,
+  and `app/styles/` the stylesheet, split by area.
 - `lib/server/` (every file imports `server-only`): env, container, HTTP lifecycle, security, repositories, AI layer,
   services.
 - Two interfaces only, both swapped by env: `AiProvider` (`AI_PROVIDER=gemini|fake`) and `PlanRepository`

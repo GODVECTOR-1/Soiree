@@ -1,8 +1,9 @@
 import 'server-only'
 import { createClient, type PostgrestError, type SupabaseClient } from '@supabase/supabase-js'
+import { z } from 'zod'
 import type { InputPatch, PlanVersion } from '@/lib/schemas'
+import { ApplyOutcome } from './planRepository'
 import type {
-  ApplyOutcome,
   Draft,
   MergedProgress,
   NewPlan,
@@ -11,6 +12,9 @@ import type {
   VersionPatch,
 } from './planRepository'
 import { toInputPatch, toRecord, toRow, toVersion } from './mappers'
+
+/** Rows deleted by the `cleanup_expired` function (Postgres may return the counts as strings). */
+const CleanupCounts = z.object({ plans: z.coerce.number(), rateRows: z.coerce.number() })
 
 const UNIQUE_VIOLATION = '23505'
 
@@ -121,16 +125,18 @@ export class SupabaseRepository implements PlanRepository {
     expectedRev: number,
     m: MergedProgress,
   ): Promise<ApplyOutcome> {
-    return check(
-      await this.db.rpc('apply_version', {
-        p_plan_id: planId,
-        p_version: version,
-        p_expected_rev: expectedRev,
-        p_phases: m.phases,
-        p_vendors: m.vendors,
-        p_ideas: m.ideas,
-      }),
-    ) as ApplyOutcome
+    return ApplyOutcome.parse(
+      check(
+        await this.db.rpc('apply_version', {
+          p_plan_id: planId,
+          p_version: version,
+          p_expected_rev: expectedRev,
+          p_phases: m.phases,
+          p_vendors: m.vendors,
+          p_ideas: m.ideas,
+        }),
+      ),
+    )
   }
 
   async incrementRate(key: string, windowStart: Date) {
@@ -145,7 +151,6 @@ export class SupabaseRepository implements PlanRepository {
   }
 
   async cleanup() {
-    const r = check(await this.db.rpc('cleanup_expired')) as { plans: number; rateRows: number }
-    return { plans: Number(r.plans), rateRows: Number(r.rateRows) }
+    return CleanupCounts.parse(check(await this.db.rpc('cleanup_expired')))
   }
 }

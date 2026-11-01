@@ -31,13 +31,10 @@ export class ApiError extends Error {
 export const errorMessage = (e: unknown) =>
   e instanceof ApiError ? e.message : 'Something went wrong. Please try again.'
 
-type Opts<T> = { body?: unknown; token?: string; schema?: z.ZodType<T> }
+type Opts = { body?: unknown; token?: string }
 
-async function request<T>(
-  method: string,
-  path: string,
-  { body, token, schema }: Opts<T> = {},
-): Promise<T> {
+/** Send a request; returns the JSON body (null for 204). Failures become an ApiError with a plain message. */
+async function send(method: string, path: string, { body, token }: Opts = {}): Promise<unknown> {
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['content-type'] = 'application/json'
   if (token) headers['x-edit-token'] = token
@@ -67,15 +64,20 @@ async function request<T>(
       )
     throw new ApiError(`HTTP_${res.status}`, 'Something went wrong. Please try again.', res.status)
   }
-  if (!schema) return undefined as T
-  const parsed = schema.safeParse(json)
+  return json
+}
+
+/** Send a request and parse the response with `schema`; a response of the wrong shape is an ApiError. */
+async function request<T>(method: string, path: string, schema: z.ZodType<T>, opts: Opts = {}) {
+  const parsed = schema.safeParse(await send(method, path, opts))
   if (!parsed.success)
-    throw new ApiError(
-      'BAD_RESPONSE',
-      'Something went wrong. Please reload and try again.',
-      res.status,
-    )
+    throw new ApiError('BAD_RESPONSE', 'Something went wrong. Please reload and try again.', 200)
   return parsed.data
+}
+
+/** Send a request whose response has no body worth reading. */
+async function command(method: string, path: string, opts: Opts) {
+  await send(method, path, opts)
 }
 
 const plan = (slug: string) => `/api/plans/${encodeURIComponent(slug)}`
@@ -83,50 +85,49 @@ const item = (id: string) => encodeURIComponent(id)
 
 /** Create a plan; the edit token is returned only here. */
 export const createPlan = (input: PlanInput) =>
-  request('POST', '/api/plans', { body: input, schema: CreatePlanResponse })
+  request('POST', '/api/plans', CreatePlanResponse, { body: input })
 
 /** Current version and history (the browser revalidates with the ETag). */
-export const getPlan = (slug: string) => request('GET', plan(slug), { schema: Plan })
+export const getPlan = (slug: string) => request('GET', plan(slug), Plan)
 
 /** Compute a draft for a scenario; replaces any previous draft. */
 export const runWhatIf = (slug: string, token: string, scenario: ScenarioInput) =>
-  request('POST', `${plan(slug)}/whatif`, { token, body: scenario, schema: WhatIfResult })
+  request('POST', `${plan(slug)}/whatif`, WhatIfResult, { token, body: scenario })
 
 export const discardDraft = (slug: string, token: string) =>
-  request<void>('DELETE', `${plan(slug)}/whatif`, { token })
+  command('DELETE', `${plan(slug)}/whatif`, { token })
 
 /** Apply a draft; returns the plan as it now stands. */
 export const applyVersion = (slug: string, token: string, version: number) =>
-  request('POST', `${plan(slug)}/apply`, { token, body: { version }, schema: Plan })
+  request('POST', `${plan(slug)}/apply`, Plan, { token, body: { version } })
 
 export const updateTask = (slug: string, token: string, taskId: string, done: boolean) =>
-  request<void>('PATCH', `${plan(slug)}/tasks/${item(taskId)}`, { token, body: { done } })
+  command('PATCH', `${plan(slug)}/tasks/${item(taskId)}`, { token, body: { done } })
 
 export const updateVendor = (slug: string, token: string, vendorId: string, patch: VendorPatch) =>
-  request<void>('PATCH', `${plan(slug)}/vendors/${item(vendorId)}`, { token, body: patch })
+  command('PATCH', `${plan(slug)}/vendors/${item(vendorId)}`, { token, body: patch })
 
 /** Add the user's own vendor; returns the updated version (the server assigns the id). */
 export const addVendor = (slug: string, token: string, vendor: NewVendor) =>
-  request('POST', `${plan(slug)}/vendors`, { token, body: vendor, schema: PlanVersion })
+  request('POST', `${plan(slug)}/vendors`, PlanVersion, { token, body: vendor })
 
 /** Remove a vendor the user added. */
 export const removeVendor = (slug: string, token: string, vendorId: string) =>
-  request<void>('DELETE', `${plan(slug)}/vendors/${item(vendorId)}`, { token })
+  command('DELETE', `${plan(slug)}/vendors/${item(vendorId)}`, { token })
 
 export const updateIdea = (slug: string, token: string, ideaId: string, saved: boolean) =>
-  request<void>('PATCH', `${plan(slug)}/ideas/${item(ideaId)}`, { token, body: { saved } })
+  command('PATCH', `${plan(slug)}/ideas/${item(ideaId)}`, { token, body: { saved } })
 
 /** Fresh ideas; saved ideas are kept. */
 export const regenerateIdeas = (slug: string, token: string, feedback?: string) =>
-  request('POST', `${plan(slug)}/ideas/regenerate`, {
+  request('POST', `${plan(slug)}/ideas/regenerate`, z.array(Idea), {
     token,
     body: { feedback: feedback || undefined },
-    schema: z.array(Idea),
   })
 
 /** Manual allocation; must add up to the budget. Returns the updated version. */
 export const saveBudget = (slug: string, token: string, amounts: Record<string, number>) =>
-  request('PATCH', `${plan(slug)}/budget`, { token, body: { amounts }, schema: PlanVersion })
+  request('PATCH', `${plan(slug)}/budget`, PlanVersion, { token, body: { amounts } })
 
 export const askPlanner = (slug: string, token: string, req: AskRequest) =>
-  request('POST', `${plan(slug)}/ask`, { token, body: req, schema: AskResponse })
+  request('POST', `${plan(slug)}/ask`, AskResponse, { token, body: req })

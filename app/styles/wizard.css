@@ -1,0 +1,362 @@
+/* Wizard, plans list, full-screen messages, skeletons and shared keyframes. */
+
+/* ---------- Wizard ---------- */
+.wizard-page {
+  min-height: 100vh;
+  padding: 0 5vw;
+}
+.wizard-page .plan-top {
+  padding: 0;
+  background: none;
+}
+.wizard-layout {
+  max-width: 1050px;
+  margin: 56px auto;
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 80px;
+}
+.wizard-layout h1 {
+  font: 48px/1.1 var(--serif);
+  margin: 14px 0 35px;
+  letter-spacing: -0.03em;
+}
+.stepper {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 28px;
+  padding: 0;
+  list-style: none;
+}
+.stepper li {
+  flex: 1;
+  height: 3px;
+  background: var(--line);
+  border-radius: 2px;
+}
+.stepper li[data-done='true'] {
+  background: var(--accent);
+}
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.choice {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: 24px 14px;
+  min-height: 64px;
+  text-transform: capitalize;
+  border-radius: var(--radius);
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.choice:hover {
+  border-color: var(--line-strong);
+}
+.choice[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: var(--tint);
+  color: var(--accent-deep);
+}
+.choice[aria-disabled='true'],
+.chip[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+/* Event cards: a ribbon glow behind each label in that event's colours, swirling toward the cursor. A soft centre
+   scrim and a text shadow keep the white label readable; "Selected" is a word plus a ring, never colour alone. */
+.event-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  min-height: 120px;
+  background: #0b0a10;
+  border-color: #0b0a10;
+  color: #fff;
+}
+.event-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(ellipse 60% 75% at 50% 50%, rgb(11 10 16 / 0.6), transparent 75%);
+}
+.ribbon-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  opacity: 0.72;
+  transition: opacity 0.3s;
+}
+.event-card:hover .ribbon-glow,
+.event-card:focus-visible .ribbon-glow,
+.event-card[aria-pressed='true'] .ribbon-glow {
+  opacity: 1;
+}
+.event-card:hover {
+  border-color: #0b0a10;
+}
+.event-card[aria-pressed='true'] {
+  background: #0b0a10;
+  color: #fff;
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--ivory),
+    0 0 0 5px var(--accent);
+}
+.event-card-label {
+  font: 500 23px var(--serif);
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 14px rgb(0 0 0 / 0.75);
+}
+.event-card-check {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  background: var(--tint);
+  color: var(--accent-deep);
+}
+.event-card-check svg {
+  width: 14px;
+  height: 14px;
+}
+.form-stack {
+  display: grid;
+  gap: 18px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.form-stack textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+.field-hint {
+  font-size: 12px;
+  color: var(--muted);
+}
+.field-error {
+  font-size: 13px;
+  color: var(--accent-deep);
+}
+.field-error::before {
+  content: '! ';
+  font-weight: 700;
+}
+[aria-invalid='true'] {
+  border-color: var(--accent) !important;
+}
+fieldset.segmented {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.segmented > div {
+  display: flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.segmented label {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 10px 8px;
+  min-height: 44px;
+  cursor: pointer;
+  color: var(--ink);
+  border-right: 1px solid var(--line);
+  text-align: center;
+  font-size: 14px;
+}
+.segmented label:last-child {
+  border-right: 0;
+}
+.segmented input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.segmented label:has(input:checked) {
+  background: var(--tint);
+  color: var(--accent-deep);
+}
+.segmented label:has(input:focus-visible) {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: -2px;
+}
+.toggle-row {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 10px !important;
+  color: var(--ink) !important;
+  font-size: 15px !important;
+}
+.toggle-row input {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  accent-color: var(--accent);
+}
+.form-error {
+  color: var(--accent-deep);
+  background: var(--tint);
+  padding: 10px 14px;
+  border-left: 3px solid var(--accent);
+  margin-top: 20px;
+}
+.wizard-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 36px;
+}
+.wizard-summary {
+  border-left: 1px solid var(--line);
+  padding-left: 40px;
+  align-self: start;
+  position: sticky;
+  top: 40px;
+}
+.wizard-summary h2 {
+  font: 28px var(--serif);
+  margin: 10px 0;
+}
+.wizard-summary p {
+  color: var(--muted);
+}
+.wizard-summary dl,
+.review-card dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 18px;
+  margin: 20px 0 0;
+  font-size: 14px;
+}
+.wizard-summary dt,
+.review-card dt {
+  color: var(--muted);
+}
+.wizard-summary dd,
+.review-card dd {
+  margin: 0;
+}
+.review-title {
+  font: 26px var(--serif);
+  margin: 0;
+}
+
+/* ---------- Plans list ---------- */
+.plans-list {
+  display: grid;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  margin: 24px 0 56px;
+}
+.plan-item {
+  background: var(--surface);
+  padding: 18px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+.plan-item h2 {
+  font: 21px var(--serif);
+  margin: 4px 0;
+}
+.plan-item-actions {
+  display: flex;
+  gap: 12px;
+}
+.plans-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 64px 0;
+}
+.plans-page h1 {
+  font: 44px var(--serif);
+  margin: 12px 0 0;
+  letter-spacing: -0.03em;
+}
+.plans-page h2.eyebrow {
+  margin: 0;
+  font-weight: 400;
+}
+.plans-skeleton {
+  height: 88px;
+  margin: 24px 0 56px;
+}
+.sample-grid {
+  margin-top: 16px;
+}
+.sample-grid .sample-card h3 {
+  font: 500 27px/1.2 var(--serif);
+  margin: 16px 0 7px;
+}
+/* Full-screen messages: not found, missing plan, load error. */
+.center-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+.center-page h1 {
+  font: clamp(40px, 6vw, 56px)/1.1 var(--serif);
+  margin: 14px 0;
+}
+.center-page .hero-actions {
+  justify-content: center;
+}
+.empty {
+  color: var(--muted);
+  border: 1px dashed var(--line-strong);
+  padding: 24px;
+  margin: 24px 0 56px;
+}
+
+/* ---------- Placeholders and shared motion (skeleton is a zero-dep port of 21st.dev Skeleton) ---------- */
+.skeleton {
+  background: var(--stone);
+  border-radius: 6px;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes slide-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}

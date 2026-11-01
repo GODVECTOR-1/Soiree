@@ -1,4 +1,5 @@
 import 'server-only'
+import { z } from 'zod'
 import type { HistoryItem, InputPatch, PlanInput, PlanVersion } from '@/lib/schemas'
 
 /** A stored version plus its compare-and-set revision. */
@@ -25,7 +26,8 @@ export type VersionPatch = Partial<
   Pick<PlanVersion, 'budgetTotal' | 'lines' | 'phases' | 'vendors' | 'ideas'>
 >
 export type MergedProgress = Pick<PlanVersion, 'phases' | 'vendors' | 'ideas'>
-export type ApplyOutcome = 'applied' | 'already_applied' | 'stale' | 'no_draft'
+export const ApplyOutcome = z.enum(['applied', 'already_applied', 'stale', 'no_draft'])
+export type ApplyOutcome = z.infer<typeof ApplyOutcome>
 export type Draft = { version: StoredVersion; inputPatch: InputPatch | null }
 
 /** All plan storage goes through this interface (Supabase in production, in-memory for keyless dev and tests). */

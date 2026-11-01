@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react'
 import { Heart } from 'lucide-react'
 import { Heading, type ViewProps } from '@/components/plan-views'
 import { LoadingScreen } from '@/components/loading-screen'
-import type { Idea } from '@/lib/schemas'
+import { LIMITS, type Idea } from '@/lib/schemas'
 import { savedFirst } from '@/lib/domain/overview'
 import { errorMessage, regenerateIdeas } from '@/lib/api'
 
@@ -79,7 +79,7 @@ export function IdeasView({ slug, token, version, canEdit, onAction }: ViewProps
             <span className="field-hint">What should new ideas lean toward? (optional)</span>
             <input
               value={feedback}
-              maxLength={300}
+              maxLength={LIMITS.messageChars}
               onChange={(e) => setFeedback(e.target.value)}
               placeholder="More outdoor, less formal"
             />

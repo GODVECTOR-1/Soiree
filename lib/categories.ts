@@ -5,7 +5,7 @@ import type { PlanInput } from './schemas'
  * Used by the wizard (priority picker) AND server templates.
  * These are the canonical labels — budget lines must match exactly.
  */
-export const categories: Record<PlanInput['eventType'], readonly string[]> = {
+export const categories: Record<PlanInput['eventType'], readonly [string, ...string[]]> = {
   wedding: [
     'Catering',
     'Photo and video',

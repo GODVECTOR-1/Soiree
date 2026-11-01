@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { Sparkles, X } from 'lucide-react'
-import type { AskResponse } from '@/lib/schemas'
+import { LIMITS, type AskResponse } from '@/lib/schemas'
 import { askPlanner, errorMessage } from '@/lib/api'
 import type { View } from '@/components/plan-nav'
 import { LoadingScreen } from '@/components/loading-screen'
@@ -29,11 +29,13 @@ function useConversation(slug: string, token: string | null) {
   const [error, setError] = useState('')
 
   const ask = async (q: string) => {
-    const text = q.trim().slice(0, 300)
+    const text = q.trim().slice(0, LIMITS.messageChars)
     if (!token || !text || busy) return
     setBusy(true)
     setError('')
-    const history = turns.slice(-6).map((t) => ({ role: t.role, text: t.text.slice(0, 900) }))
+    const history = turns
+      .slice(-6)
+      .map((t) => ({ role: t.role, text: t.text.slice(0, LIMITS.historyChars) }))
     setTurns((ts) => [...ts, { role: 'user', text }])
     try {
       const res = await askPlanner(slug, token, { question: text, history })
@@ -128,7 +130,7 @@ function QuestionForm({ busy, onAsk }: { busy: boolean; onAsk: (q: string) => vo
         <span className="sr-only">Your question</span>
         <input
           value={question}
-          maxLength={300}
+          maxLength={LIMITS.messageChars}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Where can we save a little?"
         />
@@ -161,14 +163,7 @@ export function PlannerDrawer({ slug, token, onClose, onSelect }: DrawerProps) {
   const close = () => dialog.current?.close()
 
   return (
-    // Clicks on the backdrop land on the <dialog> itself; clicks inside land on .drawer-body.
-    <dialog
-      ref={dialog}
-      className="drawer"
-      aria-labelledby="drawer-title"
-      onClose={onClose}
-      onClick={(e) => e.target === dialog.current && close()}
-    >
+    <dialog ref={dialog} className="drawer" aria-labelledby="drawer-title" onClose={onClose}>
       <div className="drawer-body">
         <div className="drawer-head">
           <div>

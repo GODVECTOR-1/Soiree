@@ -2,21 +2,18 @@
 
 import { Check } from 'lucide-react'
 import { RibbonGlow } from '@/components/ribbon-glow'
-import type { EventType, PlanInput } from '@/lib/schemas'
+import { EVENT_TYPES, LIMITS, type PlanInput } from '@/lib/schemas'
 import { categories } from '@/lib/categories'
 import { eventColors, eventLabels } from '@/lib/event-theme'
-import { MAX_PRIORITIES, splitList, togglePriority } from '@/lib/plan-form'
+import { splitList, togglePriority } from '@/lib/plan-form'
 
 export type StepProps = { plan: PlanInput; update: (patch: Partial<PlanInput>) => void }
-
-const events = Object.keys(eventLabels) as EventType[]
-const NOTES_MAX = 600
 
 /** Step 1: the event type, as three glowing cards. Switching type clears priorities (categories differ). */
 export function EventStep({ plan, update }: StepProps) {
   return (
     <div className="choice-grid" role="group" aria-label="Event type">
-      {events.map((k) => {
+      {EVENT_TYPES.map((k) => {
         const selected = plan.eventType === k
         const { accent, light, glow } = eventColors[k]
         return (
@@ -44,7 +41,7 @@ export function EventStep({ plan, update }: StepProps) {
 
 /** Step 3: up to three ranked priorities; the rest say why they are unavailable once three are picked. */
 export function PrioritiesStep({ plan, update }: StepProps) {
-  const full = plan.priorities.length >= MAX_PRIORITIES
+  const full = plan.priorities.length >= LIMITS.maxPriorities
   return (
     <>
       <p className="muted" id="h-priorities">
@@ -116,13 +113,13 @@ export function StyleStep({ plan, update }: StepProps) {
       <label>
         Anything else we should know?
         <textarea
-          maxLength={NOTES_MAX}
+          maxLength={LIMITS.notesChars}
           aria-describedby="h-notes"
           value={plan.notes ?? ''}
           onChange={(e) => update({ notes: e.target.value })}
         />
         <span className="field-hint" id="h-notes">
-          {NOTES_MAX - (plan.notes?.length ?? 0)} characters left
+          {LIMITS.notesChars - (plan.notes?.length ?? 0)} characters left
         </span>
       </label>
     </div>

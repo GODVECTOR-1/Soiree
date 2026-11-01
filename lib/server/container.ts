@@ -18,7 +18,10 @@ export type Container = {
 }
 
 let current: Container | undefined
-const g = globalThis as { __soireeMemoryRepo?: MemoryRepository }
+declare global {
+  /** The keyless memory store, kept on globalThis so dev hot reloads do not wipe it. */
+  var soireeMemoryRepo: MemoryRepository | undefined
+}
 
 function build(): Container {
   const e = env()
@@ -26,7 +29,7 @@ function build(): Container {
   // The memory store survives dev hot reloads by living on globalThis.
   const repo =
     e.DB_PROVIDER === 'memory'
-      ? (g.__soireeMemoryRepo ??= new MemoryRepository(now))
+      ? (globalThis.soireeMemoryRepo ??= new MemoryRepository(now))
       : new SupabaseRepository(e.SUPABASE_URL ?? '', e.SUPABASE_SECRET_KEY ?? '')
   const ai =
     e.AI_PROVIDER === 'fake'

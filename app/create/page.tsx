@@ -12,8 +12,8 @@ import {
   type StepProps,
 } from '@/components/wizard/choice-steps'
 import { ReviewStep, WizardSummary } from '@/components/wizard/plan-summary'
-import { useWizardDraft } from '@/hooks/useWizardDraft'
-import { useCreatePlan } from '@/hooks/useCreatePlan'
+import { useWizardDraft } from '@/hooks/use-wizard-draft'
+import { useCreatePlan } from '@/hooks/use-create-plan'
 import { stepProblems, type BasicsErrors } from '@/lib/plan-form'
 
 const titles = [

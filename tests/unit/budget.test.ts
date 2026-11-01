@@ -6,7 +6,8 @@ import { budgetTemplates } from '../../lib/domain/templates'
 import { previewVersion } from '../../lib/domain/baseline'
 import { runScenario } from '../../lib/domain/scenarios'
 import { applyAction } from '../../lib/domain/actions'
-import { samples, type PlanInput } from '../../lib/schemas'
+import { type PlanInput } from '../../lib/schemas'
+import { samples } from '../../lib/samples'
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 

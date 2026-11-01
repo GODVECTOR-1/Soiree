@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { samples, type PlanInput, type Task } from '@/lib/schemas'
+import { type PlanInput, type Task } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 import { previewVersion } from '@/lib/domain/baseline'
 import { runScenario } from '@/lib/domain/scenarios'
 import { allTasks, taskPriority } from '@/lib/domain/timeline'

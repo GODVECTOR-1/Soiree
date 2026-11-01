@@ -4,7 +4,6 @@ import * as api from '@/lib/api'
 import { ApiError, createPlan, errorMessage, getPlan, regenerateIdeas, updateTask } from '@/lib/api'
 import { forgetPlan, getToken, listLocalPlans, rememberPlan, saveToken } from '@/lib/local-plans'
 import {
-  MAX_PRIORITIES,
   basicsErrors,
   blankInput,
   parseDraft,
@@ -13,7 +12,8 @@ import {
   togglePriority,
 } from '@/lib/plan-form'
 import { eventColors, eventLabels } from '@/lib/event-theme'
-import { PlanInput, samples } from '@/lib/schemas'
+import { LIMITS, PlanInput } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 
 // Browser-side modules: the API client, the device's plan list, the wizard's form rules and the event theme.
 
@@ -210,14 +210,14 @@ describe('wizard form rules', () => {
     let p: string[] = []
     for (const c of ['Catering', 'Venue', 'Decor', 'Music']) p = togglePriority(p, c)
     expect(p).toEqual(['Catering', 'Venue', 'Decor'])
-    expect(p).toHaveLength(MAX_PRIORITIES)
+    expect(p).toHaveLength(LIMITS.maxPriorities)
     expect(togglePriority(p, 'Venue')).toEqual(['Catering', 'Decor'])
   })
 })
 
 describe('event theme', () => {
   it('names every event and keeps canvas accents in step with the CSS tokens', () => {
-    const css = readFileSync('app/globals.css', 'utf8')
+    const css = readFileSync('app/styles/base.css', 'utf8')
     for (const type of Object.keys(eventLabels) as (keyof typeof eventLabels)[]) {
       expect(eventLabels[type]).toBeTruthy()
       expect(css).toMatch(

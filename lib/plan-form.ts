@@ -1,8 +1,5 @@
 import { z } from 'zod'
-import { PlanInput } from './schemas'
-
-/** The most priorities a plan can rank. */
-export const MAX_PRIORITIES = 3
+import { LIMITS, PlanInput } from './schemas'
 
 /** An empty wizard draft. */
 export const blankInput: PlanInput = {
@@ -24,13 +21,13 @@ export const blankInput: PlanInput = {
 
 /** A wizard draft in progress: the plan's shape, with the fields the user has not finished allowed to be empty. */
 const Draft = PlanInput.extend({
-  title: z.string().max(80),
-  city: z.string().max(40),
+  title: z.string().max(LIMITS.titleChars),
+  city: z.string().max(LIMITS.cityChars),
   date: z.string(),
   planningStart: z.string(),
   guestCount: z.number(),
   totalBudget: z.number(),
-  priorities: z.array(z.string().max(40)).max(MAX_PRIORITIES),
+  priorities: z.array(z.string().max(LIMITS.categoryChars)).max(LIMITS.maxPriorities),
 })
 
 /** Reads a saved draft (JSON); anything unreadable or malformed gives a fresh draft starting today. */
@@ -55,12 +52,14 @@ export const splitList = (value: string) =>
 /** Adds a priority at the end of the ranking, or removes it if already ranked. Ignores additions past the limit. */
 export function togglePriority(priorities: readonly string[], item: string): string[] {
   if (priorities.includes(item)) return priorities.filter((x) => x !== item)
-  return priorities.length < MAX_PRIORITIES ? [...priorities, item] : [...priorities]
+  return priorities.length < LIMITS.maxPriorities ? [...priorities, item] : [...priorities]
 }
 
 export type BasicsField = 'title' | 'city' | 'date' | 'planningStart' | 'guestCount' | 'totalBudget'
 
 type Check = (p: PlanInput, today: string) => string | undefined
+
+const GUESTS_MESSAGE = `Guests must be between 1 and ${LIMITS.maxGuests.toLocaleString('en-US')}.`
 
 const wholeBetween = (n: number, min: number, max: number) =>
   Number.isInteger(n) && n >= min && n <= max
@@ -83,8 +82,7 @@ const basicsChecks: [BasicsField, Check][] = [
   ['planningStart', planningStartError],
   [
     'guestCount',
-    (p) =>
-      wholeBetween(p.guestCount, 1, 5000) ? undefined : 'Guests must be between 1 and 5,000.',
+    (p) => (wholeBetween(p.guestCount, 1, LIMITS.maxGuests) ? undefined : GUESTS_MESSAGE),
   ],
   [
     'totalBudget',

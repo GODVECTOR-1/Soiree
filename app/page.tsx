@@ -10,10 +10,9 @@ import { Ribbon } from '@/components/ribbon'
 import { allocate } from '@/lib/domain/allocate'
 import { dateParts } from '@/lib/format'
 import { eventColors } from '@/lib/event-theme'
-import { samples, type EventType } from '@/lib/schemas'
+import { EVENT_TYPES, type EventType } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 import { gallery } from './gallery'
-
-const events: EventType[] = ['wedding', 'birthday', 'community']
 
 function SiteHeader() {
   return (
@@ -60,7 +59,7 @@ function HeroCopy({ event, onEvent }: EventProps) {
       </div>
       <div className="event-picker" role="group" aria-label="Preview an event type">
         <span>Planning a</span>
-        {events.map((item) => (
+        {EVENT_TYPES.map((item) => (
           <button
             key={item}
             type="button"

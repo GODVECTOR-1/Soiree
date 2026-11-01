@@ -2,7 +2,8 @@ import { setContainer, type Container } from '@/lib/server/container'
 import { MemoryRepository } from '@/lib/server/db/memoryRepository'
 import { FakeAi, type FakeHandler } from '@/lib/server/ai/fake'
 import type { AiTask } from '@/lib/server/constants'
-import { samples, type PlanInput } from '@/lib/schemas'
+import { type PlanInput } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 
 export const NOW = new Date('2026-11-01T10:00:00Z')
 

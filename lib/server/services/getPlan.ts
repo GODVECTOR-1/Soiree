@@ -1,13 +1,12 @@
 import 'server-only'
-import { samples, type EventType, type Plan } from '@/lib/schemas'
+import { EVENT_TYPES, type EventType, type Plan } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 import { previewVersion } from '@/lib/domain/baseline'
 import { addDays } from '@/lib/format'
 import { DEMO_DAYS_OUT } from '../constants'
 import type { Container } from '../container'
 import { errors } from '../http/errors'
 import { etagOf, isoDay, toPublicPlan } from './shared'
-
-const DEMO = /^demo-(wedding|birthday|community)$/
 
 /** Demo plans are generated from the samples on read, dated from today so they never go stale. Never stored. */
 function demoPlan(type: EventType, today: string): Plan {
@@ -29,7 +28,7 @@ function demoPlan(type: EventType, today: string): Plan {
 /** A plan's current version and history, with its ETag. Expired or unknown slugs are 404. */
 export async function getPlan(c: Container, slug: string): Promise<{ plan: Plan; etag: string }> {
   const today = isoDay(c.now())
-  const demo = DEMO.exec(slug)?.[1] as EventType | undefined
+  const demo = EVENT_TYPES.find((type) => slug === `demo-${type}`)
   if (demo) return { plan: demoPlan(demo, today), etag: `W/"demo-${today}"` }
   const record = await c.repo.get(slug)
   if (!record) throw errors.notFound()

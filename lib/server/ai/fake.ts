@@ -2,7 +2,8 @@ import 'server-only'
 import type { AiTask } from '../constants'
 import { buildIdeas } from '@/lib/domain/ideas'
 import { money } from '@/lib/format'
-import type { Currency, EventType } from '@/lib/schemas'
+import { z } from 'zod'
+import { CURRENCIES, EVENT_TYPES } from '@/lib/schemas'
 import { generateValidated, type AiProvider, type AiRequest } from './provider'
 
 type Json = Record<string, unknown>
@@ -11,20 +12,31 @@ export type FakeHandler = (ctx: FakeContext) => unknown
 
 const block = (user: string, tag: string): Json => {
   const m = new RegExp(`<${tag}>\\n?([\\s\\S]*?)\\n?</${tag}>`).exec(user)
-  return m?.[1] ? (JSON.parse(m[1]) as Json) : {}
+  return m?.[1] ? z.record(z.string(), z.unknown()).parse(JSON.parse(m[1])) : {}
 }
 
-type LineFact = {
-  id: string
-  category: string
-  amount?: number
-  sharePct?: number
-  baselineSharePct?: number
-}
+/** The fact fields the fake reads; anything missing falls back to a neutral default. */
+const Facts = z.object({
+  lines: z
+    .array(
+      z.object({
+        id: z.string(),
+        category: z.string(),
+        amount: z.number().optional(),
+        sharePct: z.number().optional(),
+        baselineSharePct: z.number().optional(),
+      }),
+    )
+    .catch([]),
+  currency: z.enum(CURRENCIES).catch('INR'),
+  eventType: z.enum(EVENT_TYPES).catch('wedding'),
+  priorities: z.array(z.string()).catch([]),
+})
+const factsOf = (facts: Json) => Facts.parse(facts)
 
 /** Grounded keyword answer: enough for keyless dev and e2e, built only from the facts. */
 function answer(facts: Json, question: string) {
-  const lines = (facts.lines as LineFact[] | undefined) ?? []
+  const { lines, currency } = factsOf(facts)
   const hit = lines.find((l) =>
     question.toLowerCase().includes(l.category.toLowerCase().split(' ')[0] ?? '~'),
   )
@@ -34,9 +46,8 @@ function answer(facts: Json, question: string) {
         'I can answer questions about your budget, timeline, vendors and ideas. Try asking about one of your budget lines, or run a what-if.',
       references: [],
     }
-  const cur = (facts.currency as Currency | undefined) ?? 'INR'
   return {
-    answer: `${hit.category} has ${money(hit.amount ?? 0, cur)}, which is ${hit.sharePct ?? 0}% of your budget.`,
+    answer: `${hit.category} has ${money(hit.amount ?? 0, currency)}, which is ${hit.sharePct ?? 0}% of your budget.`,
     references: [{ kind: 'budget', id: hit.id, label: hit.category }],
   }
 }
@@ -58,7 +69,7 @@ function mapCustom(text: string) {
 
 const defaults: Record<AiTask, FakeHandler> = {
   allocation_review: ({ facts }) => ({
-    lines: ((facts.lines as LineFact[] | undefined) ?? []).map((l) => ({
+    lines: factsOf(facts).lines.map((l) => ({
       id: l.id,
       sharePct: l.baselineSharePct,
       rationale: '',
@@ -68,10 +79,12 @@ const defaults: Record<AiTask, FakeHandler> = {
   timeline: () => ({ renames: [], additions: [] }),
   vendor_questions: () => ({ vendors: [] }),
   ideas: ({ facts }) => ({
-    ideas: buildIdeas({
-      eventType: facts.eventType as EventType,
-      priorities: (facts.priorities as string[] | undefined) ?? [],
-    }).map(({ kind, title, blurb, fitsPriority }) => ({ kind, title, blurb, fitsPriority })),
+    ideas: buildIdeas(factsOf(facts)).map(({ kind, title, blurb, fitsPriority }) => ({
+      kind,
+      title,
+      blurb,
+      fitsPriority,
+    })),
   }),
   narrative: ({ facts }) => ({ narrative: facts.templateNarrative }),
   ask: ({ facts, data }) => answer(facts, String(data.question ?? '')),

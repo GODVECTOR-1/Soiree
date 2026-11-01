@@ -5,6 +5,7 @@ import { Plus } from 'lucide-react'
 import { Heading, type ViewProps } from '@/components/plan-views'
 import { VendorRow } from '@/components/vendor-row'
 import { MAX_CUSTOM_VENDORS } from '@/lib/domain/vendors'
+import { LIMITS } from '@/lib/schemas'
 
 type AddProps = {
   categories: string[]
@@ -38,7 +39,11 @@ function AddVendorForm({ categories, full, onAdd }: AddProps) {
         </label>
         <label className="vendor-field">
           <span className="field-hint">Name (optional)</span>
-          <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
+          <input
+            value={name}
+            maxLength={LIMITS.vendorNameChars}
+            onChange={(e) => setName(e.target.value)}
+          />
         </label>
         <button type="submit" className="primary-btn" disabled={full}>
           <Plus aria-hidden /> Add vendor

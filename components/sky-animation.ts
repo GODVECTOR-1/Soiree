@@ -58,9 +58,7 @@ export class SkyAnimation {
 
   /** Starts the sky on `canvas`. Without WebGL the canvas is hidden and the CSS gradient shows; returns null. */
   static start(canvas: HTMLCanvasElement): SkyAnimation | null {
-    const options = { alpha: false, antialias: false }
-    const gl = (canvas.getContext('webgl', options) ||
-      canvas.getContext('experimental-webgl', options)) as WebGLRenderingContext | null
+    const gl = canvas.getContext('webgl', { alpha: false, antialias: false })
     if (!gl) {
       canvas.style.visibility = 'hidden'
       return null

@@ -99,6 +99,28 @@ function errorResponse(e: unknown, requestId: string): Response {
   return Response.json({ error }, { status, headers })
 }
 
+/**
+ * The context a handler receives. `plan` and `body` exist only on routes that declare `auth` or `body`; reading them
+ * anywhere else is a programming error and fails loudly (a 500 with a request id) instead of passing `undefined`.
+ */
+function handlerContext<B>(
+  base: Omit<HandlerContext<B>, 'plan' | 'body'>,
+  plan: PlanRecord | undefined,
+  body: { value: B } | undefined,
+): HandlerContext<B> {
+  return {
+    ...base,
+    get plan() {
+      if (!plan) throw new Error('This route reads the plan but does not declare auth.')
+      return plan
+    },
+    get body() {
+      if (!body) throw new Error('This route reads a body but does not declare one.')
+      return body.value
+    },
+  }
+}
+
 /** A handler's result as a response: a Response as is, null as 204, anything else as JSON. */
 function toResponse(out: Response | object | null): Response {
   if (out instanceof Response) return out
@@ -131,13 +153,10 @@ export function withHandler<B = undefined>(
       const params = await route.params
       const text = await bodyText(req, !!opts.body)
       if (opts.limit) await limitIp(c, opts.limit, ipHash(req.headers, c.salt))
-      const plan = opts.auth
-        ? await authorize(c, req, params.slug)
-        : (undefined as unknown as PlanRecord)
-      const body = opts.body ? parseBody(opts.body, text) : (undefined as B)
-      const out = await withDeadline(REQUEST_BUDGET_MS, () =>
-        fn({ req, requestId, params, body, plan, c }),
-      )
+      const plan = opts.auth ? await authorize(c, req, params.slug) : undefined
+      const body = opts.body ? { value: parseBody(opts.body, text) } : undefined
+      const ctx = handlerContext({ req, requestId, params, c }, plan, body)
+      const out = await withDeadline(REQUEST_BUDGET_MS, () => fn(ctx))
       res = toResponse(out)
       res.headers.set('x-request-id', requestId)
       if (!res.headers.has('cache-control')) res.headers.set('cache-control', 'no-store')

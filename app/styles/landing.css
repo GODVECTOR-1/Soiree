@@ -1,0 +1,571 @@
+/* Landing page, hero band, loading screen, plan picker, frame border and coverflow. */
+
+/* ---------- Landing ---------- */
+.landing {
+  min-height: 100vh;
+  padding: 0 5vw;
+}
+.site-header,
+.plan-top {
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  font: 24px var(--serif);
+  letter-spacing: -0.04em;
+  border: 0;
+  background: none;
+}
+.brand span {
+  font: 12px var(--sans);
+  color: var(--muted);
+  margin-left: 12px;
+  letter-spacing: 0;
+}
+.site-header nav {
+  display: flex;
+  gap: 32px;
+  margin-left: auto;
+  margin-right: 36px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.site-header nav a:hover {
+  color: var(--ink);
+}
+.hero {
+  max-width: 1200px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9vw;
+  align-items: center;
+  min-height: 640px;
+}
+.hero h1 {
+  font: 500 clamp(40px, 5vw, 64px)/1.04 var(--serif);
+  letter-spacing: -0.04em;
+  margin: 20px 0;
+}
+.hero h1 em {
+  font-style: normal;
+  color: var(--accent-deep);
+}
+.hero-copy > p {
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.65;
+  max-width: 500px;
+}
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 30px;
+}
+.event-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 70px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.event-picker button {
+  border: 1px solid transparent;
+  background: none;
+  padding: 7px 12px;
+  min-height: 36px;
+  border-radius: 999px;
+  color: var(--muted);
+  text-transform: capitalize;
+}
+.event-picker button:hover {
+  color: var(--ink);
+}
+.event-picker button[aria-pressed='true'] {
+  color: var(--accent-deep);
+  border-color: var(--accent);
+  background: var(--tint);
+}
+.sample-wrap {
+  position: relative;
+}
+.sample-card {
+  display: block;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s;
+}
+a.sample-card:hover {
+  transform: translateY(-2px);
+}
+.sample-card h2 {
+  font: 500 27px/1.2 var(--serif);
+  margin: 34px 0 7px;
+}
+.sample-card p {
+  color: var(--muted);
+  font-size: 13px;
+}
+.sample-top,
+.sample-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--muted);
+}
+.sample-top svg {
+  color: var(--accent);
+}
+.sample-bottom {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.sample-bottom span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.card-note {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+  font: italic 15px var(--serif);
+  color: var(--muted);
+}
+.note-line {
+  width: 40px;
+  height: 1px;
+  background: var(--gold);
+}
+.trust-row {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.trust-row > div {
+  background: var(--ivory);
+  padding: 28px;
+  display: grid;
+  gap: 6px;
+}
+.trust-row svg {
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.trust-row span {
+  color: var(--muted);
+  font-size: 14px;
+}
+/* Hero band: Originkit Mood Field behind the hero, coloured per event and swirling toward the cursor.
+   Light text plus a left scrim keep the copy at 4.5:1 even where the bright veins pass behind it. */
+.hero-band {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  margin: 0 -5vw 56px;
+  padding: 0 5vw;
+  background: #05060a;
+  color: var(--ivory);
+}
+.mood-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: -2;
+}
+.hero-band::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    rgb(5 6 10 / 0.8) 0%,
+    rgb(5 6 10 / 0.55) 42%,
+    rgb(5 6 10 / 0) 72%
+  );
+}
+.hero-band .hero {
+  padding: 48px 0;
+}
+.hero-band .hero-copy .eyebrow,
+.hero-band .hero-copy > p,
+.hero-band .event-picker,
+.hero-band .event-picker button,
+.hero-band .card-note {
+  color: rgb(251 248 243 / 0.85);
+}
+.hero-band .hero h1 em,
+.hero-band .hero-copy .text-btn {
+  color: var(--tint);
+}
+.hero-band .event-picker button:hover {
+  color: #fff;
+}
+.hero-band .event-picker button[aria-pressed='true'] {
+  color: var(--accent-deep);
+  background: var(--tint);
+  border-color: var(--tint);
+}
+.hero-band :focus-visible {
+  outline-color: var(--ivory);
+}
+
+/* Loading: the sky (recoloured with the three event colours) behind a frosted card of animated text. */
+.loading {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+}
+/* No fade: a plan chosen from the picker hands over to the plan page's identical screen without a flash between. */
+/* A modal <dialog> filling the window (top layer, so no z-index); its own sky is the backdrop. */
+.loading-page {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.loading-page::backdrop {
+  background: transparent;
+}
+
+/* Plan picker: native <dialog> (focus trap, Esc, inert page), plans then samples, each tagged with its event colour. */
+.site-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.picker {
+  margin: auto; /* Tailwind's reset zeroes the margin browsers use to centre modal dialogs */
+  width: min(520px, calc(100vw - 32px));
+  max-height: min(640px, calc(100vh - 48px));
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+.picker::backdrop {
+  background: rgb(30 27 36 / 0.35);
+  backdrop-filter: blur(2px);
+}
+.picker[open] {
+  animation: fade-in 0.2s ease;
+}
+.picker-body {
+  display: grid;
+  gap: 20px;
+  padding: 24px;
+}
+.picker-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.picker-head h2 {
+  font: 30px var(--serif);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+.picker-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.picker-item {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  min-height: 56px;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--ivory);
+  transition:
+    background 0.2s,
+    border-color 0.2s;
+}
+.picker-item:hover {
+  background: var(--tint);
+  border-color: var(--accent);
+}
+.picker-item > span {
+  display: grid;
+  gap: 4px;
+}
+.picker-item strong {
+  font: 19px/1.25 var(--serif);
+}
+.picker-item svg {
+  flex: none;
+  color: var(--accent-deep);
+}
+.picker-empty {
+  margin: 10px 0 0;
+  color: var(--muted);
+}
+.picker-empty a {
+  color: var(--accent-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.loading-inline {
+  min-height: 190px;
+  margin-top: 24px;
+  border-radius: 16px;
+}
+.loading-card {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  max-width: min(520px, 90%);
+  padding: 28px 36px;
+  text-align: center;
+  border-radius: 20px;
+  background: rgb(255 255 255 / 0.45);
+  border: 1px solid rgb(255 255 255 / 0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 24px 60px rgb(30 27 36 / 0.12);
+}
+.loading-inline .loading-card {
+  padding: 18px 24px;
+}
+.loading-brand {
+  font: 22px var(--serif);
+  letter-spacing: -0.04em;
+}
+.loading-title {
+  margin: 0;
+  font: 500 clamp(26px, 4vw, 40px)/1.15 var(--serif);
+  letter-spacing: -0.03em;
+}
+.loading-inline .loading-title {
+  font-size: 22px;
+}
+.loading-title > span:not(.loading-dots) {
+  display: inline-block;
+  white-space: pre;
+  animation: word-up 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.loading-dots {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+.loading-dots i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: dot 1.2s ease-in-out infinite;
+}
+.loading-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.loading-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.loading-step {
+  margin: 0;
+  min-height: 1.5em;
+  font-size: 15px;
+  color: #3a3540;
+  animation: step-in 0.5s ease both;
+}
+.loading-bar {
+  position: relative;
+  width: 160px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: rgb(30 27 36 / 0.12);
+}
+.loading-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #b5446e, #c4421f, #0b7f6b);
+  animation: bar 1.6s ease-in-out infinite;
+}
+@keyframes word-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+@keyframes dot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-5px);
+  }
+}
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes bar {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* Sample plans: glowing frame around the window, above content but never in the way of clicks. */
+.frame-border {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* Gallery: coverflow adapted from Originkit. --card-w drives every size, so it scales without JS. */
+/* Sits above the sample card in the hero's right column; --spread keeps the fanned cards inside that column. */
+.coverflow {
+  --card-w: clamp(150px, 14vw, 210px);
+  --spread: 0.5;
+  position: relative;
+  height: calc(var(--card-w) * 4 / 3 + 48px);
+  margin-bottom: 20px;
+  perspective: 1600px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.coverflow-stage {
+  position: relative;
+  width: var(--card-w);
+  height: calc(var(--card-w) * 4 / 3);
+  transform-style: preserve-3d;
+}
+.coverflow-card {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: var(--stone);
+  transform-origin: center;
+  box-shadow: var(--shadow);
+}
+.coverflow-card img {
+  object-fit: cover;
+  user-select: none;
+}
+.coverflow-dim {
+  position: absolute;
+  inset: 0;
+  background: var(--ink);
+  pointer-events: none;
+}
+.coverflow-controls {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+/* A transparent button over each side photo, for the mouse (hidden from assistive tech; keyboard has the steps). */
+.coverflow-pick {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+/* Previous and next stay visually hidden until reached by keyboard, then look like the pause button. */
+.coverflow-step:not(:focus-visible) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  border: 0;
+}
+.coverflow-step,
+.coverflow-toggle {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.9);
+  color: var(--ink);
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+}
+.coverflow-step:hover,
+.coverflow-toggle:hover {
+  background: #fff;
+}
+.coverflow-step svg,
+.coverflow-toggle svg {
+  width: 18px;
+  height: 18px;
+}
+.landing footer {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  color: var(--muted);
+  font-size: 12px;
+}

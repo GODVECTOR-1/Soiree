@@ -2,25 +2,47 @@ import { z } from 'zod'
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
+/** Input limits: the schemas below enforce them, and forms and server checks read them from here. */
+export const LIMITS = {
+  titleChars: 80,
+  cityChars: 40,
+  categoryChars: 40,
+  notesChars: 600,
+  maxGuests: 5000,
+  maxPriorities: 3,
+  maxAmount: 1_000_000_000,
+  vendorNameChars: 80,
+  vendorContactChars: 120,
+  vendorNotesChars: 500,
+  /** A question to the planner, idea feedback, or a what-if in the user's own words. */
+  messageChars: 300,
+  /** One earlier turn sent back with a question. */
+  historyChars: 900,
+} as const
+
 /** What the user tells us in the wizard. Shared by client and server. */
 export const PlanInput = z.object({
   eventType: z.enum(['wedding', 'birthday', 'community']),
-  title: z.string().trim().min(1).max(80),
-  city: z.string().trim().min(1).max(40),
+  title: z.string().trim().min(1).max(LIMITS.titleChars),
+  city: z.string().trim().min(1).max(LIMITS.cityChars),
   date: isoDate,
   planningStart: isoDate,
-  guestCount: z.number().int().min(1).max(5000),
+  guestCount: z.number().int().min(1).max(LIMITS.maxGuests),
   cityTier: z.union([z.literal(1), z.literal(2), z.literal(3)]),
   currency: z.enum(['INR', 'USD', 'EUR', 'GBP']),
-  totalBudget: z.number().int().positive().max(1_000_000_000),
-  priorities: z.array(z.string().min(1).max(40)).min(1).max(3),
+  totalBudget: z.number().int().positive().max(LIMITS.maxAmount),
+  priorities: z.array(z.string().min(1).max(LIMITS.categoryChars)).min(1).max(LIMITS.maxPriorities),
   vibes: z.array(z.string().max(30)).max(4).default([]),
   diet: z.array(z.string().max(30)).max(4).default([]),
   accessibility: z.boolean().default(false),
-  notes: z.string().max(600).optional(),
+  notes: z.string().max(LIMITS.notesChars).optional(),
 })
 export type PlanInput = z.infer<typeof PlanInput>
 export type EventType = PlanInput['eventType']
+/** Every event type, in display order. */
+export const EVENT_TYPES = PlanInput.shape.eventType.options
+/** Every supported currency. */
+export const CURRENCIES = PlanInput.shape.currency.options
 export type Currency = PlanInput['currency']
 
 export const BudgetLine = z.object({
@@ -59,12 +81,12 @@ export const VendorItem = z.object({
   estLow: z.number().int().nonnegative(),
   estHigh: z.number().int().nonnegative(),
   questionsToAsk: z.array(z.string().max(160)),
-  notes: z.string().max(500).optional(),
+  notes: z.string().max(LIMITS.vendorNotesChars).optional(),
   verifyBeforeDeposit: z.boolean(),
   /** The user's own records: who they are talking to, how to reach them, and what they quoted. */
-  name: z.string().trim().max(80).optional(),
-  contact: z.string().trim().max(120).optional(),
-  quote: z.number().int().nonnegative().max(1_000_000_000).optional(),
+  name: z.string().trim().max(LIMITS.vendorNameChars).optional(),
+  contact: z.string().trim().max(LIMITS.vendorContactChars).optional(),
+  quote: z.number().int().nonnegative().max(LIMITS.maxAmount).optional(),
   /** Added by the user rather than generated from a budget line; only these can be removed. */
   custom: z.boolean().optional(),
 })
@@ -150,8 +172,8 @@ export const ScenarioInput = z.object({
     'custom',
   ]),
   value: z.number().optional(),
-  priorities: z.array(z.string()).max(3).optional(),
-  text: z.string().max(300).optional(),
+  priorities: z.array(z.string()).max(LIMITS.maxPriorities).optional(),
+  text: z.string().max(LIMITS.messageChars).optional(),
 })
 export type ScenarioInput = z.infer<typeof ScenarioInput>
 
@@ -159,9 +181,14 @@ export const WhatIfResult = z.object({ draft: PlanVersion, diff: PlanDiff, input
 export type WhatIfResult = z.infer<typeof WhatIfResult>
 
 export const AskRequest = z.object({
-  question: z.string().trim().min(1).max(300),
+  question: z.string().trim().min(1).max(LIMITS.messageChars),
   history: z
-    .array(z.object({ role: z.enum(['user', 'assistant']), text: z.string().max(900) }))
+    .array(
+      z.object({
+        role: z.enum(['user', 'assistant']),
+        text: z.string().max(LIMITS.historyChars),
+      }),
+    )
     .max(6),
 })
 export type AskRequest = z.infer<typeof AskRequest>
@@ -189,71 +216,22 @@ export const ApplyRequest = z.object({ version: z.number().int().positive() })
 export const TaskPatch = z.object({ done: z.boolean() })
 export const VendorPatch = z.strictObject({
   status: VendorStatus.optional(),
-  notes: z.string().max(500).optional(),
-  name: z.string().trim().max(80).optional(),
-  contact: z.string().trim().max(120).optional(),
+  notes: z.string().max(LIMITS.vendorNotesChars).optional(),
+  name: z.string().trim().max(LIMITS.vendorNameChars).optional(),
+  contact: z.string().trim().max(LIMITS.vendorContactChars).optional(),
   /** `null` clears a recorded quote. */
-  quote: z.number().int().nonnegative().max(1_000_000_000).nullable().optional(),
+  quote: z.number().int().nonnegative().max(LIMITS.maxAmount).nullable().optional(),
 })
 export type VendorPatch = z.infer<typeof VendorPatch>
 export const NewVendor = z.strictObject({
-  category: z.string().trim().min(1).max(40),
-  name: z.string().trim().max(80).optional(),
+  category: z.string().trim().min(1).max(LIMITS.categoryChars),
+  name: z.string().trim().max(LIMITS.vendorNameChars).optional(),
 })
 export type NewVendor = z.infer<typeof NewVendor>
 export const IdeaPatch = z.object({ saved: z.boolean() })
-export const RegenerateRequest = z.object({ feedback: z.string().trim().max(300).optional() })
-export const BudgetPatch = z.object({
-  amounts: z.record(z.string(), z.number().int().nonnegative().max(1_000_000_000)),
+export const RegenerateRequest = z.object({
+  feedback: z.string().trim().max(LIMITS.messageChars).optional(),
 })
-
-export const samples: Record<EventType, PlanInput> = {
-  wedding: {
-    eventType: 'wedding',
-    title: "Priya and Arjun's celebration",
-    city: 'Bengaluru',
-    date: '2027-02-14',
-    planningStart: '2026-10-31',
-    guestCount: 120,
-    cityTier: 1,
-    currency: 'INR',
-    totalBudget: 300000,
-    priorities: ['Catering', 'Photo and video'],
-    vibes: ['Garden', 'Golden hour'],
-    diet: [],
-    accessibility: false,
-    notes: 'A warm garden supper.',
-  },
-  birthday: {
-    eventType: 'birthday',
-    title: "Meera's 30th birthday",
-    city: 'Mumbai',
-    date: '2026-12-08',
-    planningStart: '2026-10-31',
-    guestCount: 40,
-    cityTier: 2,
-    currency: 'INR',
-    totalBudget: 80000,
-    priorities: ['Food and cake', 'Entertainment'],
-    vibes: ['Rooftop evening', 'Playful'],
-    diet: [],
-    accessibility: false,
-    notes: 'A lively dinner with friends.',
-  },
-  community: {
-    eventType: 'community',
-    title: "Lakeview residents' winter fair",
-    city: 'Pune',
-    date: '2027-01-23',
-    planningStart: '2026-10-31',
-    guestCount: 250,
-    cityTier: 2,
-    currency: 'INR',
-    totalBudget: 180000,
-    priorities: ['Promotion and reach', 'Food'],
-    vibes: ['Family friendly', 'Outdoor'],
-    diet: ['Vegetarian'],
-    accessibility: true,
-    notes: 'A welcoming neighborhood gathering.',
-  },
-}
+export const BudgetPatch = z.object({
+  amounts: z.record(z.string(), z.number().int().nonnegative().max(LIMITS.maxAmount)),
+})

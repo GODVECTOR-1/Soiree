@@ -1,6 +1,8 @@
 // End-to-end smoke test against a running server, printing latency against the budgets.
 // Usage: BASE_URL=http://localhost:3000 pnpm smoke   (RATE_LIMIT_ENABLED=false on the server for more than 8 creates/hour)
 
+import { z } from 'zod'
+
 const BASE = process.env.BASE_URL ?? 'http://localhost:3000'
 const RUNS = Number(process.env.SMOKE_RUNS ?? 5)
 const budgets: Record<string, number> = {
@@ -50,16 +52,19 @@ async function main() {
       accessibility: true,
       notes: 'Two-day celebration with a mehendi evening. Grandma uses a wheelchair.',
     }
-    const { slug, editToken } = (await timed('create', '/api/plans', json(input))) as {
-      slug: string
-      editToken: string
-    }
+    const { slug, editToken } = z
+      .object({ slug: z.string(), editToken: z.string() })
+      .parse(await timed('create', '/api/plans', json(input)))
     await timed('read', `/api/plans/${slug}`)
-    const draft = (await timed(
-      'whatif',
-      `/api/plans/${slug}/whatif`,
-      json({ kind: 'budget_change', value: -20 }, editToken),
-    )) as { draft: { version: number } }
+    const draft = z
+      .object({ draft: z.object({ version: z.number() }) })
+      .parse(
+        await timed(
+          'whatif',
+          `/api/plans/${slug}/whatif`,
+          json({ kind: 'budget_change', value: -20 }, editToken),
+        ),
+      )
     await timed('edit', `/api/plans/${slug}/tasks/wedding-0`, {
       ...json({ done: true }, editToken),
       method: 'PATCH',

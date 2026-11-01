@@ -7,7 +7,7 @@ import { resetEnv } from '@/lib/server/env'
 import { MemoryRepository } from '@/lib/server/db/memoryRepository'
 import { FakeAi } from '@/lib/server/ai/fake'
 import { previewVersion } from '@/lib/domain/baseline'
-import { samples } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 
 // The seams to Postgres and Gemini, checked without either: row mapping, the model's JSON Schema, and wiring by env.
 

@@ -10,6 +10,7 @@ import type {
   VendorItem,
   WhatIfResult,
 } from '../schemas'
+import { LIMITS } from '../schemas'
 import { addDays } from '../format'
 import { allocate } from './allocate'
 import { buildDiff } from './diff'
@@ -143,7 +144,7 @@ function priorityShare(extra: number, priorities: number, others: number) {
 }
 
 function guestChange(input: PlanInput, current: PlanVersion, wanted: number): ScenarioResult {
-  const guests = Math.min(5000, Math.max(1, Math.round(wanted)))
+  const guests = Math.min(LIMITS.maxGuests, Math.max(1, Math.round(wanted)))
   const ratio = guests / input.guestCount
   const total = current.budgetTotal
   const driven = (l: BudgetLine) => {

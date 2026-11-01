@@ -1,7 +1,13 @@
 'use client'
 
 import { ShieldCheck, Trash2 } from 'lucide-react'
-import type { Currency, VendorItem, VendorPatch, VendorStatus } from '@/lib/schemas'
+import {
+  LIMITS,
+  type Currency,
+  type VendorItem,
+  type VendorPatch,
+  VendorStatus,
+} from '@/lib/schemas'
 import { quoteCheck } from '@/lib/domain/vendors'
 import { money } from '@/lib/format'
 
@@ -93,7 +99,10 @@ function VendorHead({ vendor: v, canEdit, onSave }: RowProps) {
           <span className="sr-only">Status for {name}</span>
           <select
             value={v.status}
-            onChange={(e) => onSave({ status: e.target.value as VendorStatus }, 'Status saved.')}
+            onChange={(e) => {
+              const status = VendorStatus.options.find((s) => s === e.target.value)
+              if (status) onSave({ status }, 'Status saved.')
+            }}
           >
             {Object.entries(statusLabels).map(([value, label]) => (
               <option key={value} value={value}>
@@ -118,14 +127,14 @@ function VendorFields({ vendor: v, currency, onSave }: RowProps) {
       <BlurField
         label="Vendor name"
         value={v.name}
-        maxLength={80}
+        maxLength={LIMITS.vendorNameChars}
         onSave={(x) => onSave({ name: x })}
       />
       <BlurField
         label="Contact (phone or email)"
         hint="Anyone with your view link can see this."
         value={v.contact}
-        maxLength={120}
+        maxLength={LIMITS.vendorContactChars}
         onSave={(x) => onSave({ contact: x })}
       />
       <BlurField
@@ -148,7 +157,7 @@ function VendorNotes({ vendor: v, onSave }: RowProps) {
     <label className="notes-field">
       <span className="field-hint">Notes</span>
       <textarea
-        maxLength={500}
+        maxLength={LIMITS.vendorNotesChars}
         defaultValue={v.notes ?? ''}
         rows={2}
         onBlur={(e) => {

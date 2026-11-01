@@ -4,7 +4,7 @@ import { useState } from 'react'
 import type { PlanInput } from '@/lib/schemas'
 import { blankInput, parseDraft } from '@/lib/plan-form'
 import { todayIso } from '@/lib/format'
-import { useHydrated } from '@/lib/use-hydrated'
+import { useHydrated } from '@/hooks/use-hydrated'
 
 const DRAFT_KEY = 'soiree:wizard'
 

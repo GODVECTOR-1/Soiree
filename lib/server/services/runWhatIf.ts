@@ -1,5 +1,5 @@
 import 'server-only'
-import type { PlanInput, ScenarioInput, WhatIfResult } from '@/lib/schemas'
+import { LIMITS, type PlanInput, type ScenarioInput, type WhatIfResult } from '@/lib/schemas'
 import { buildDiff } from '@/lib/domain/diff'
 import { runScenario, type Scenario } from '@/lib/domain/scenarios'
 import { priorityError } from '@/lib/domain/templates'
@@ -22,7 +22,13 @@ const whole = (v: number | undefined, min: number, max: number, message: string)
 }
 
 function guestScenario(input: PlanInput, value: number | undefined): Scenario {
-  const guests = whole(value, 1, 5000, 'Guest count must be between 1 and 5,000.')
+  const most = LIMITS.maxGuests
+  const guests = whole(
+    value,
+    1,
+    most,
+    `Guest count must be between 1 and ${most.toLocaleString('en-US')}.`,
+  )
   if (guests === input.guestCount) throw errors.validation('That is already your guest count.')
   return { kind: 'guest_change', guests }
 }

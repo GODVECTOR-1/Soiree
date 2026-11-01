@@ -19,7 +19,7 @@ import {
   updateVendor,
 } from '@/lib/api'
 import { rememberPlan } from '@/lib/local-plans'
-import { usePlanAccess } from '@/hooks/usePlanAccess'
+import { usePlanAccess } from '@/hooks/use-plan-access'
 import { LoadingScreen } from '@/components/loading-screen'
 
 type State =

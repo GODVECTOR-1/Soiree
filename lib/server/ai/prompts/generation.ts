@@ -95,7 +95,7 @@ export function allocationReview(input: PlanInput, baseline: BudgetLine[]) {
 /** Rename at most 8 tasks (ids unchanged) and add at most 6 from the notes. */
 export function timelinePersonalization(input: PlanInput, tasks: Task[]) {
   const ids = tasks.map((t) => t.id)
-  const tags = categories[input.eventType] as [string, ...string[]]
+  const tags = categories[input.eventType]
   const schema = z.object({
     renames: z
       .array(z.object({ id: z.string(), title: z.string().min(3).max(140) }))

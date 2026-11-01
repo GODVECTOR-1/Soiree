@@ -39,7 +39,8 @@ const GLOW_IN_S = 0.8
 /** sRGB hex to OKLCH [L, C, h]. */
 function oklch(hex: string): [number, number, number] {
   const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-  const [r, g, b] = rgb(hex).map(lin) as [number, number, number]
+  const [sr, sg, sb] = rgb(hex)
+  const [r, g, b] = [lin(sr), lin(sg), lin(sb)]
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
   const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)

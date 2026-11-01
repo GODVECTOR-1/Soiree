@@ -1,6 +1,6 @@
 'use client'
 
-import type { Currency } from '@/lib/schemas'
+import { CURRENCIES, LIMITS } from '@/lib/schemas'
 import type { BasicsErrors, BasicsField } from '@/lib/plan-form'
 import { money } from '@/lib/format'
 import type { StepProps } from '@/components/wizard/choice-steps'
@@ -10,7 +10,6 @@ const tiers = [
   { value: 2, label: 'Large city' },
   { value: 3, label: 'Smaller town' },
 ] as const
-const currencies: Currency[] = ['INR', 'USD', 'EUR', 'GBP']
 
 type BasicsProps = StepProps & { errors: BasicsErrors; today: string }
 
@@ -41,7 +40,7 @@ function PlaceFields({ plan, update, errors }: BasicsProps) {
         Celebration name
         <input
           {...fieldProps(errors, 'title')}
-          maxLength={80}
+          maxLength={LIMITS.titleChars}
           autoComplete="off"
           value={plan.title}
           onChange={(e) => update({ title: e.target.value })}
@@ -52,7 +51,7 @@ function PlaceFields({ plan, update, errors }: BasicsProps) {
         City
         <input
           {...fieldProps(errors, 'city')}
-          maxLength={40}
+          maxLength={LIMITS.cityChars}
           autoComplete="address-level2"
           value={plan.city}
           onChange={(e) => update({ city: e.target.value })}
@@ -124,7 +123,7 @@ function SizeFields({ plan, update, errors }: BasicsProps) {
             type="number"
             inputMode="numeric"
             min={1}
-            max={5000}
+            max={LIMITS.maxGuests}
             value={plan.guestCount || ''}
             onChange={(e) => update({ guestCount: Number(e.target.value) })}
           />
@@ -134,9 +133,11 @@ function SizeFields({ plan, update, errors }: BasicsProps) {
           Currency
           <select
             value={plan.currency}
-            onChange={(e) => update({ currency: e.target.value as Currency })}
+            onChange={(e) =>
+              update({ currency: CURRENCIES.find((c) => c === e.target.value) ?? plan.currency })
+            }
           >
-            {currencies.map((c) => (
+            {CURRENCIES.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>

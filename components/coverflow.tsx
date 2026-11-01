@@ -9,11 +9,12 @@ import {
   type CSSProperties,
 } from 'react'
 import Image from 'next/image'
-import { Pause, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
 
 // Adapted from Originkit's Coverflow Gallery (Smooth3DSlideshow). Kept: the 3D math and the autoplay preset.
 // Changed: sizes come from CSS (--card-w, --spread) so it fits any column, Framer-only code is gone, and autoplay
 // pauses on hover or keyboard focus, starts paused under prefers-reduced-motion, and has a pause/play button (WCAG 2.2.2).
+// Keyboard users step with previous/next buttons that appear on focus; mouse users click a side photo.
 
 export type CoverflowSlide = { src: string; alt: string }
 
@@ -73,7 +74,6 @@ function Slide({ slide, index, count, rel, onPick }: SlideProps) {
       aria-roledescription="slide"
       aria-label={`${index + 1} of ${count}`}
       aria-hidden={!isActive}
-      onClick={() => !isActive && onPick()}
     >
       {/* Above the fold: load every photo now, the first one first (it is the LCP image). */}
       <Image
@@ -89,6 +89,50 @@ function Slide({ slide, index, count, rel, onPick }: SlideProps) {
         className="coverflow-dim"
         style={{ opacity: isActive ? 0 : DIM, transition: `opacity ${MOVE_S}s ${EASE}` }}
       />
+      {/* A mouse shortcut to a side photo; keyboard users have the previous and next buttons. */}
+      {!isActive && (
+        <button
+          type="button"
+          className="coverflow-pick"
+          tabIndex={-1}
+          aria-hidden
+          onClick={onPick}
+        />
+      )}
+    </div>
+  )
+}
+
+type ControlsProps = { paused: boolean; onToggle: () => void; onStep: (by: number) => void }
+
+/** Pause/play is always on screen; previous and next appear when a keyboard user tabs to them. */
+function CarouselControls({ paused, onToggle, onStep }: ControlsProps) {
+  return (
+    <div className="coverflow-controls">
+      <button
+        type="button"
+        className="coverflow-step"
+        aria-label="Previous photo"
+        onClick={() => onStep(-1)}
+      >
+        <ChevronLeft aria-hidden />
+      </button>
+      <button
+        type="button"
+        className="coverflow-toggle"
+        aria-label={paused ? 'Play slideshow' : 'Pause slideshow'}
+        onClick={onToggle}
+      >
+        {paused ? <Play aria-hidden /> : <Pause aria-hidden />}
+      </button>
+      <button
+        type="button"
+        className="coverflow-step"
+        aria-label="Next photo"
+        onClick={() => onStep(1)}
+      >
+        <ChevronRight aria-hidden />
+      </button>
     </div>
   )
 }
@@ -136,18 +180,11 @@ export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: 
       className="coverflow"
       role="region"
       aria-roledescription="carousel"
-      aria-label={`${label}. Use the arrow keys to browse.`}
-      tabIndex={0}
+      aria-label={label}
       onMouseEnter={() => setHovering(true)}
       onMouseLeave={() => setHovering(false)}
       onFocus={() => setHovering(true)}
       onBlur={() => setHovering(false)}
-      onKeyDown={(e) => {
-        if (e.key === 'ArrowRight') go((a) => a + 1)
-        else if (e.key === 'ArrowLeft') go((a) => a - 1)
-        else return
-        e.preventDefault()
-      }}
     >
       <div className="coverflow-stage">
         {slides.map((slide, i) => (
@@ -162,14 +199,11 @@ export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: 
         ))}
       </div>
       {n > 1 && (
-        <button
-          type="button"
-          className="coverflow-toggle"
-          aria-label={paused ? 'Play slideshow' : 'Pause slideshow'}
-          onClick={togglePaused}
-        >
-          {paused ? <Play aria-hidden /> : <Pause aria-hidden />}
-        </button>
+        <CarouselControls
+          paused={paused}
+          onToggle={togglePaused}
+          onStep={(by) => go((a) => a + by)}
+        />
       )}
     </div>
   )

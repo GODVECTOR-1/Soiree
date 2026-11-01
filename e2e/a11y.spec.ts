@@ -75,8 +75,13 @@ test('landing page is accessible with zero CSP violations', async ({ page }) => 
   await page.waitForTimeout(700)
   const shown = carousel.getByRole('group') // hidden slides are out of the accessibility tree
   const at = Number((await shown.getAttribute('aria-label'))?.split(' ')[0])
-  await carousel.focus()
-  await page.keyboard.press('ArrowRight')
+  // Next photo is hidden until a keyboard user tabs to it, then shows as a full-size button.
+  await carousel.getByRole('button', { name: 'Play slideshow' }).focus()
+  await page.keyboard.press('Tab')
+  const next = carousel.getByRole('button', { name: 'Next photo' })
+  await expect(next).toBeFocused()
+  expect((await next.boundingBox())?.width).toBe(40)
+  await page.keyboard.press('Enter')
   await expect(shown).toHaveAccessibleName(`${(at % 8) + 1} of 8`)
   expect(problems).toEqual([])
 })

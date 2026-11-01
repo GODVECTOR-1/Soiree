@@ -59,6 +59,12 @@ function trim(node: unknown, isMap = false): unknown {
 export const toModelSchema = (schema: z.ZodType) =>
   trim(z.toJSONSchema(schema, { unrepresentable: 'any' }))
 
+/** The HTTP status a provider error carries, if any (a 429 means the quota is used up). */
+function httpStatusOf(e: unknown): number | undefined {
+  if (typeof e !== 'object' || e === null || !('status' in e)) return undefined
+  return typeof e.status === 'number' ? e.status : undefined
+}
+
 /** How a failed model call is logged: unparseable JSON, a timeout, or any other error. */
 function failureOutcome(e: unknown) {
   if (e instanceof SyntaxError) return 'invalid_json'
@@ -105,10 +111,7 @@ export async function generateValidated<T>(
         .join('; ')
     } catch (e) {
       outcome = failureOutcome(e)
-      status =
-        typeof (e as { status?: unknown }).status === 'number'
-          ? (e as { status: number }).status
-          : undefined
+      status = httpStatusOf(e)
     }
     log('ai', {
       task: req.task,

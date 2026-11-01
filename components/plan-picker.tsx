@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import { ChevronRight, FolderHeart, X } from 'lucide-react'
 import { LoadingScreen } from '@/components/loading-screen'
 import { listLocalPlans, type LocalPlan } from '@/lib/local-plans'
-import { samples, type EventType } from '@/lib/schemas'
+import { EVENT_TYPES } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 import { shortDate } from '@/lib/format'
 import { eventLabels } from '@/lib/event-theme'
 
@@ -70,7 +71,7 @@ function SamplePlans({ onChoose }: { onChoose: Choose }) {
         Sample plans
       </h3>
       <ul className="picker-list">
-        {(Object.keys(samples) as EventType[]).map((k) => (
+        {EVENT_TYPES.map((k) => (
           <PlanRow
             key={k}
             slug={`demo-${k}`}
@@ -117,14 +118,7 @@ export function PlanPicker() {
       >
         <FolderHeart aria-hidden /> <span className="btn-label">Your plans</span>
       </button>
-
-      {/* Clicks on the backdrop land on the <dialog> itself; clicks inside land on .picker-body. */}
-      <dialog
-        ref={dialog}
-        className="picker"
-        aria-labelledby="picker-title"
-        onClick={(e) => e.target === dialog.current && close()}
-      >
+      <dialog ref={dialog} className="picker" aria-labelledby="picker-title">
         <div className="picker-body">
           <div className="picker-head">
             <h2 id="picker-title">Your plans</h2>

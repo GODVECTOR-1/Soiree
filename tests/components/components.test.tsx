@@ -7,8 +7,10 @@ import { VendorsView } from '@/components/vendors-view'
 import { Coverflow } from '@/components/coverflow'
 import { LoadingScreen } from '@/components/loading-screen'
 import CreatePage from '@/app/create/page'
+import ErrorPage from '@/app/error'
 import { previewVersion } from '@/lib/domain/baseline'
-import { samples, type PlanVersion } from '@/lib/schemas'
+import { type PlanVersion } from '@/lib/schemas'
+import { samples } from '@/lib/samples'
 
 // UI behaviour that screen-reader and keyboard users rely on. Canvas effects have no WebGL here, so they fall back
 // to their CSS backgrounds, exactly as they do in a browser without WebGL.
@@ -116,13 +118,18 @@ describe('Coverflow', () => {
       .getAllByRole('group', { hidden: true })
       .find((g) => g.getAttribute('aria-hidden') === 'false')
 
-  it('moves with the arrow keys and can be paused', () => {
+  it('steps with the previous and next buttons and can be paused', () => {
     vi.useFakeTimers()
     render(<Coverflow slides={slides} label="Celebration photos" />)
-    const region = screen.getByRole('region', { name: /Celebration photos/ })
+    const region = screen.getByRole('region', { name: 'Celebration photos' })
     expect(current()?.getAttribute('aria-label')).toBe('1 of 3')
-    fireEvent.keyDown(region, { key: 'ArrowRight' })
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }))
     expect(current()?.getAttribute('aria-label')).toBe('2 of 3')
+    act(() => void vi.advanceTimersByTime(700)) // moves ignore input for 0.6 s
+    fireEvent.click(screen.getByRole('button', { name: 'Previous photo' }))
+    expect(current()?.getAttribute('aria-label')).toBe('1 of 3')
+    act(() => void vi.advanceTimersByTime(700))
+    fireEvent.click(screen.getByRole('button', { name: 'Next photo' }))
 
     fireEvent.click(screen.getByRole('button', { name: 'Pause slideshow' }))
     expect(screen.getByRole('button', { name: 'Play slideshow' })).toBeTruthy()
@@ -172,5 +179,20 @@ describe('Create wizard', () => {
     expect(music.getAttribute('aria-disabled')).toBe('true')
     fireEvent.click(music)
     expect(music.getAttribute('aria-pressed')).toBe('false')
+  })
+})
+
+describe('Error page', () => {
+  it('apologises in plain words, shows the reference, and retries', () => {
+    const reset = vi.fn()
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    render(
+      <ErrorPage error={Object.assign(new Error('boom'), { digest: 'abc123' })} reset={reset} />,
+    )
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('This page hit a snag')
+    expect(screen.getByRole('alert').textContent).toMatch(/Ref abc123/)
+    expect(screen.getByRole('alert').textContent).not.toMatch(/boom/)
+    fireEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(reset).toHaveBeenCalledOnce()
   })
 })
