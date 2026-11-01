@@ -10,10 +10,15 @@ const SHOUTING = /\b[A-Z]{4,}\b/g
 const NUMBER = /\d[\d,]*(?:\.\d+)?/g
 
 /** Replace a phone-like match only when it has 10+ digits, so dates and amounts survive. */
-const phone = (s: string, by: string) => s.replace(PHONE, (m) => (m.replace(/\D/g, '').length >= 10 ? by : m))
+const phone = (s: string, by: string) =>
+  s.replace(PHONE, (m) => (m.replace(/\D/g, '').length >= 10 ? by : m))
 
 /** Remove personal identifiers (URLs, emails, phone numbers) from user text before it reaches a prompt. */
-export const redact = (text: string) => phone(text.replace(URL_RE, '[link removed]').replace(EMAIL, '[email removed]'), '[number removed]')
+export const redact = (text: string) =>
+  phone(
+    text.replace(URL_RE, '[link removed]').replace(EMAIL, '[email removed]'),
+    '[number removed]',
+  )
 
 /** Untrusted text for a prompt: identifiers redacted, control characters removed, truncated, angle brackets escaped. */
 export const cleanInput = (text: string, max = 600) =>
@@ -22,15 +27,18 @@ export const cleanInput = (text: string, max = 600) =>
 function deepClean(value: unknown): unknown {
   if (typeof value === 'string') return cleanInput(value)
   if (Array.isArray(value)) return value.map(deepClean)
-  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, deepClean(v)]))
+  if (value && typeof value === 'object')
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, deepClean(v)]))
   return value
 }
 
 /** Wrap user-provided fields as untrusted data. Every string inside is cleaned first. */
-export const userData = (value: unknown) => `<user_data>\n${JSON.stringify(deepClean(value))}\n</user_data>`
+export const userData = (value: unknown) =>
+  `<user_data>\n${JSON.stringify(deepClean(value))}\n</user_data>`
 
 /** Trusted, code-computed facts. `<` is escaped inside the JSON so nothing can close the tag. */
-export const factsBlock = (facts: unknown) => `<facts>${JSON.stringify(facts).replace(/</g, '\\u003c')}</facts>`
+export const factsBlock = (facts: unknown) =>
+  `<facts>${JSON.stringify(facts).replace(/</g, '\\u003c')}</facts>`
 
 /**
  * Make generated text safe to show: no URLs, emails, phone numbers, markup brackets, emojis or ALL-CAPS runs,
@@ -48,14 +56,16 @@ export function cleanOutput(text: string, max: number): string {
 }
 
 /** Every number written in a text (commas removed, so "₹3,00,000" is 300000). */
-export const numbersIn = (text: string) => (text.match(NUMBER) ?? []).map((n) => Number(n.replace(/,/g, '')))
+export const numbersIn = (text: string) =>
+  (text.match(NUMBER) ?? []).map((n) => Number(n.replace(/,/g, '')))
 
 /** All numbers in a facts object, including those inside strings, plus their absolute values. */
 export function factNumbers(facts: unknown, out = new Set<number>()): Set<number> {
   if (typeof facts === 'number') out.add(facts).add(Math.abs(facts))
   else if (typeof facts === 'string') numbersIn(facts).forEach((n) => out.add(n))
   else if (Array.isArray(facts)) facts.forEach((f) => factNumbers(f, out))
-  else if (facts && typeof facts === 'object') Object.values(facts).forEach((f) => factNumbers(f, out))
+  else if (facts && typeof facts === 'object')
+    Object.values(facts).forEach((f) => factNumbers(f, out))
   return out
 }
 

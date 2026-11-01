@@ -18,16 +18,38 @@ describe('plan flow', () => {
     const plan = Plan.parse(read.json)
     expect(plan.readOnly).toBe(false)
 
-    const w = await call(whatif, 'POST', { params: { slug }, token: editToken, body: { kind: 'budget_change', value: -20 } })
+    const w = await call(whatif, 'POST', {
+      params: { slug },
+      token: editToken,
+      body: { kind: 'budget_change', value: -20 },
+    })
     expect(w.status).toBe(200)
     const draft = WhatIfResult.parse(w.json)
     const taskId = plan.current.phases[0]?.tasks[0]?.id ?? ''
-    expect((await call(task, 'PATCH', { params: { slug, taskId }, token: editToken, body: { done: true } })).status).toBe(204)
+    expect(
+      (
+        await call(task, 'PATCH', {
+          params: { slug, taskId },
+          token: editToken,
+          body: { done: true },
+        })
+      ).status,
+    ).toBe(204)
 
-    const applied = Plan.parse((await call(apply, 'POST', { params: { slug }, token: editToken, body: { version: draft.draft.version } })).json)
+    const applied = Plan.parse(
+      (
+        await call(apply, 'POST', {
+          params: { slug },
+          token: editToken,
+          body: { version: draft.draft.version },
+        })
+      ).json,
+    )
     expect(applied.current.version).toBe(2)
     expect(applied.input.totalBudget).toBe(240000)
-    expect(applied.current.phases.flatMap((p) => p.tasks).find((t) => t.id === taskId)?.done).toBe(true)
+    expect(applied.current.phases.flatMap((p) => p.tasks).find((t) => t.id === taskId)?.done).toBe(
+      true,
+    )
     expect(applied.history.map((h) => h.version)).toEqual([1, 2])
   })
 })

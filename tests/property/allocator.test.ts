@@ -54,12 +54,17 @@ describe('allocator properties', () => {
         const r = runScenario(input, v, { kind: 'budget_change', value })
         expect(r.diff.totalCheck.ok).toBe(true)
         // Priorities give only when the other lines cannot cover the cut (tiny budgets).
-        const coverable = sum(v.lines.filter((l) => !l.isPriority).map((l) => l.amount)) >= v.budgetTotal - r.draft.budgetTotal
+        const coverable =
+          sum(v.lines.filter((l) => !l.isPriority).map((l) => l.amount)) >=
+          v.budgetTotal - r.draft.budgetTotal
         for (const before of v.lines) {
           const after = r.draft.lines.find((l) => l.id === before.id)?.amount ?? 0
           if (before.isPriority && coverable) expect(after).toBe(before.amount)
           if (!before.isPriority && !r.floorsBroken) {
-            const floor = Math.round((r.draft.budgetTotal * (templateFor(input.eventType, before.category)?.share ?? 0)) / 200)
+            const floor = Math.round(
+              (r.draft.budgetTotal * (templateFor(input.eventType, before.category)?.share ?? 0)) /
+                200,
+            )
             expect(after).toBeGreaterThanOrEqual(Math.min(before.amount, floor))
           }
         }
@@ -70,19 +75,42 @@ describe('allocator properties', () => {
 
   it('every other scenario keeps the total exact and priorities whole on increases', () => {
     fc.assert(
-      fc.property(planInput, fc.integer({ min: 1, max: 100 }), fc.integer({ min: 1, max: 5000 }), fc.integer({ min: -60, max: 365 }), (input, up, guests, days) => {
-        const v = previewVersion(input, TODAY)
-        const more = runScenario(input, v, { kind: 'budget_change', value: up })
-        expect(more.diff.totalCheck.ok).toBe(true)
-        for (const l of v.lines.filter((x) => x.isPriority)) expect(more.draft.lines.find((x) => x.id === l.id)!.amount).toBeGreaterThanOrEqual(l.amount)
+      fc.property(
+        planInput,
+        fc.integer({ min: 1, max: 100 }),
+        fc.integer({ min: 1, max: 5000 }),
+        fc.integer({ min: -60, max: 365 }),
+        (input, up, guests, days) => {
+          const v = previewVersion(input, TODAY)
+          const more = runScenario(input, v, { kind: 'budget_change', value: up })
+          expect(more.diff.totalCheck.ok).toBe(true)
+          for (const l of v.lines.filter((x) => x.isPriority))
+            expect(more.draft.lines.find((x) => x.id === l.id)!.amount).toBeGreaterThanOrEqual(
+              l.amount,
+            )
 
-        expect(runScenario(input, v, { kind: 'guest_change', guests }).diff.totalCheck).toMatchObject({ ok: true, allocated: v.budgetTotal })
-        expect(runScenario(input, v, { kind: 'venue_cancelled', today: TODAY }).diff.totalCheck.ok).toBe(true)
-        const moved = runScenario(input, v, { kind: 'date_change', days, today: TODAY })
-        expect(allTasks(moved.draft.phases).map((t) => t.id).sort()).toEqual(allTasks(v.phases).map((t) => t.id).sort())
-        const pri = [...categories[input.eventType]].reverse().slice(0, 2)
-        expect(runScenario(input, v, { kind: 'reprioritize', priorities: pri }).diff.totalCheck.ok).toBe(true)
-      }),
+          expect(
+            runScenario(input, v, { kind: 'guest_change', guests }).diff.totalCheck,
+          ).toMatchObject({ ok: true, allocated: v.budgetTotal })
+          expect(
+            runScenario(input, v, { kind: 'venue_cancelled', today: TODAY }).diff.totalCheck.ok,
+          ).toBe(true)
+          const moved = runScenario(input, v, { kind: 'date_change', days, today: TODAY })
+          expect(
+            allTasks(moved.draft.phases)
+              .map((t) => t.id)
+              .sort(),
+          ).toEqual(
+            allTasks(v.phases)
+              .map((t) => t.id)
+              .sort(),
+          )
+          const pri = [...categories[input.eventType]].reverse().slice(0, 2)
+          expect(
+            runScenario(input, v, { kind: 'reprioritize', priorities: pri }).diff.totalCheck.ok,
+          ).toBe(true)
+        },
+      ),
       { numRuns: 200 },
     )
   })

@@ -15,7 +15,14 @@ const statusLabels: Record<VendorStatus, string> = {
 }
 
 /** Text field that saves on blur, only when the value changed. */
-function BlurField(props: { label: string; hint?: string; value?: string; type?: string; maxLength?: number; onSave: (v: string) => void }) {
+function BlurField(props: {
+  label: string
+  hint?: string
+  value?: string
+  type?: string
+  maxLength?: number
+  onSave: (v: string) => void
+}) {
   return (
     <label className="vendor-field">
       <span className="field-hint">{props.label}</span>
@@ -38,7 +45,12 @@ function QuoteNote({ v, currency }: { v: VendorItem; currency: Parameters<typeof
   const check = quoteCheck(v)
   if (v.quote === undefined) return null
   const quoted = money(v.quote, currency)
-  if (!check) return <span className="estimate">Quoted <b>{quoted}</b></span>
+  if (!check)
+    return (
+      <span className="estimate">
+        Quoted <b>{quoted}</b>
+      </span>
+    )
   const text = {
     over: `${money(v.quote - v.estHigh, currency)} over your planning range. Ask what can be trimmed, or run a what-if to make room.`,
     within: 'Within your planning range.',
@@ -56,7 +68,8 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
   const [category, setCategory] = useState(categories[0] ?? 'Other')
   const [name, setName] = useState('')
   const customCount = version.vendors.filter((v) => v.custom).length
-  const save = (id: string, patch: VendorPatch, message = 'Saved.') => onAction({ type: 'vendor', id, patch }, message)
+  const save = (id: string, patch: VendorPatch, message = 'Saved.') =>
+    onAction({ type: 'vendor', id, patch }, message)
 
   const add = (e: FormEvent) => {
     e.preventDefault()
@@ -67,8 +80,8 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
   return (
     <section className="detail">
       <Heading eyebrow="Vendor checklist" title="Shortlists, not marketplaces">
-        Ranges come from your own budget. Record who you are talking to and what they quote, and Soirée checks it
-        against the plan.
+        Ranges come from your own budget. Record who you are talking to and what they quote, and
+        Soirée checks it against the plan.
       </Heading>
       <div className="vendor-list">
         {version.vendors.map((v) => (
@@ -76,12 +89,22 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
             <div className="vendor-row-head">
               <div>
                 <strong id={`${v.id}-name`}>{v.name || v.category}</strong>
-                {(v.name || v.custom) && <span className="vendor-meta">{v.category}{v.custom && ' · added by you'}</span>}
+                {(v.name || v.custom) && (
+                  <span className="vendor-meta">
+                    {v.category}
+                    {v.custom && ' · added by you'}
+                  </span>
+                )}
               </div>
               {canEdit ? (
                 <label>
                   <span className="sr-only">Status for {v.name || v.category}</span>
-                  <select value={v.status} onChange={(e) => save(v.id, { status: e.target.value as VendorStatus }, 'Status saved.')}>
+                  <select
+                    value={v.status}
+                    onChange={(e) =>
+                      save(v.id, { status: e.target.value as VendorStatus }, 'Status saved.')
+                    }
+                  >
                     {Object.entries(statusLabels).map(([value, label]) => (
                       <option key={value} value={value}>
                         {label}
@@ -97,14 +120,20 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
             </div>
             {v.estHigh > 0 && (
               <span className="estimate">
-                Planning estimate, not a quote: <b>{money(v.estLow, input.currency)}</b> to <b>{money(v.estHigh, input.currency)}</b>
+                Planning estimate, not a quote: <b>{money(v.estLow, input.currency)}</b> to{' '}
+                <b>{money(v.estHigh, input.currency)}</b>
               </span>
             )}
             <QuoteNote v={v} currency={input.currency} />
             {!canEdit && v.contact && <span className="estimate">Contact: {v.contact}</span>}
             {canEdit && (
               <div className="vendor-fields">
-                <BlurField label="Vendor name" value={v.name} maxLength={80} onSave={(x) => save(v.id, { name: x })} />
+                <BlurField
+                  label="Vendor name"
+                  value={v.name}
+                  maxLength={80}
+                  onSave={(x) => save(v.id, { name: x })}
+                />
                 <BlurField
                   label="Contact (phone or email)"
                   hint="Anyone with your view link can see this."
@@ -116,7 +145,13 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
                   label={`Quote (${input.currency})`}
                   type="number"
                   value={v.quote?.toString()}
-                  onSave={(x) => save(v.id, { quote: x === '' ? null : Math.max(0, Math.round(Number(x)) || 0) }, 'Quote saved.')}
+                  onSave={(x) =>
+                    save(
+                      v.id,
+                      { quote: x === '' ? null : Math.max(0, Math.round(Number(x)) || 0) },
+                      'Quote saved.',
+                    )
+                  }
                 />
               </div>
             )}
@@ -138,7 +173,8 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
                   defaultValue={v.notes ?? ''}
                   rows={2}
                   onBlur={(e) => {
-                    if (e.target.value !== (v.notes ?? '')) void save(v.id, { notes: e.target.value }, 'Note saved.')
+                    if (e.target.value !== (v.notes ?? ''))
+                      void save(v.id, { notes: e.target.value }, 'Note saved.')
                   }}
                 />
               </label>
@@ -150,7 +186,10 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
                 </span>
               )}
               {canEdit && v.custom && (
-                <button className="text-btn" onClick={() => onAction({ type: 'vendor-remove', id: v.id }, 'Vendor removed.')}>
+                <button
+                  className="text-btn"
+                  onClick={() => onAction({ type: 'vendor-remove', id: v.id }, 'Vendor removed.')}
+                >
                   <Trash2 aria-hidden /> Remove
                 </button>
               )}
@@ -162,7 +201,9 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
       {canEdit && (
         <form className="add-vendor" onSubmit={add} aria-labelledby="add-vendor-title">
           <h3 id="add-vendor-title">Add a vendor</h3>
-          <p className="field-hint">Comparing two caterers? Add each one and record their quotes.</p>
+          <p className="field-hint">
+            Comparing two caterers? Add each one and record their quotes.
+          </p>
           <div className="add-vendor-fields">
             <label className="vendor-field">
               <span className="field-hint">Category</span>
@@ -176,7 +217,11 @@ export function VendorsView({ input, version, canEdit, onAction }: ViewProps) {
               <span className="field-hint">Name (optional)</span>
               <input value={name} maxLength={80} onChange={(e) => setName(e.target.value)} />
             </label>
-            <button type="submit" className="primary-btn" disabled={customCount >= MAX_CUSTOM_VENDORS}>
+            <button
+              type="submit"
+              className="primary-btn"
+              disabled={customCount >= MAX_CUSTOM_VENDORS}
+            >
               <Plus aria-hidden /> Add vendor
             </button>
           </div>

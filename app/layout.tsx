@@ -7,7 +7,8 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 
 export const metadata: Metadata = {
   title: 'Soirée — Plan the celebration, not the spreadsheet',
-  description: 'A thoughtful planning assistant for weddings, birthdays, and community celebrations.',
+  description:
+    'A thoughtful planning assistant for weddings, birthdays, and community celebrations.',
   icons: {
     icon: [
       { url: '/icon-light-32x32.png', media: '(prefers-color-scheme: light)' },

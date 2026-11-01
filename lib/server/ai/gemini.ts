@@ -6,7 +6,10 @@ import { generateValidated, toModelSchema, type AiProvider, type AiRequest } fro
 export class GeminiProvider implements AiProvider {
   private client: GoogleGenAI
 
-  constructor(apiKey: string, private model: string) {
+  constructor(
+    apiKey: string,
+    private model: string,
+  ) {
     this.client = new GoogleGenAI({ apiKey })
   }
 

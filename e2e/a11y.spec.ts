@@ -1,17 +1,28 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, test, type Page } from '@playwright/test'
 
-/** Fails on any serious or critical axe violation. */
+/** Fails on any axe violation, of any impact: WCAG 2.2 A and AA rules plus axe best practices. */
 async function expectAccessible(page: Page) {
-  const { violations } = await new AxeBuilder({ page }).analyze()
-  const bad = violations.filter((v) => v.impact === 'serious' || v.impact === 'critical')
-  expect(bad.map((v) => `${v.id}: ${v.nodes.length} nodes`)).toEqual([])
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'])
+    .analyze()
+  expect(
+    violations.map(
+      (v) => `${v.impact} ${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`,
+    ),
+  ).toEqual([])
 }
 
 /** Collects CSP violations and page errors so every test can assert zero. */
 function watchConsole(page: Page) {
   const problems: string[] = []
-  page.on('console', (m) => m.type() === 'error' && /Content.Security.Policy|Refused to/i.test(m.text()) && problems.push(m.text()))
+  page.on(
+    'console',
+    (m) =>
+      m.type() === 'error' &&
+      /Content.Security.Policy|Refused to/i.test(m.text()) &&
+      problems.push(m.text()),
+  )
   page.on('pageerror', (e) => problems.push(e.message))
   return problems
 }
@@ -54,7 +65,31 @@ test('landing page is accessible with zero CSP violations', async ({ page }) => 
   await page.goto('/')
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
   await expectAccessible(page)
+
+  // The photo carousel moves on its own, so it must have a way to stop it (WCAG 2.2.2).
+  const carousel = page.getByRole('region', { name: /Celebration photos/ })
+  await carousel.getByRole('button', { name: 'Pause slideshow' }).click()
+  await expect(carousel.getByRole('button', { name: 'Play slideshow' })).toBeVisible()
+  await carousel.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(carousel.getByRole('group', { name: '2 of 8' })).toBeVisible()
   expect(problems).toEqual([])
+})
+
+test('Ask the planner is a modal dialog: focus moves in, stays in, and returns on Escape', async ({
+  page,
+}) => {
+  await page.goto('/plan/demo-wedding')
+  const open = page.getByRole('button', { name: 'Ask the planner' })
+  await open.click()
+  const dialog = page.getByRole('dialog', { name: 'Ask the planner' })
+  await expect(dialog.getByRole('button', { name: 'Close planner' })).toBeFocused()
+  await expectAccessible(page)
+  for (let i = 0; i < 12; i++) await page.keyboard.press('Tab')
+  expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(open).toBeFocused()
 })
 
 test('wizard by keyboard, overview, what-if apply, and read-only view link', async ({ page }) => {
@@ -108,7 +143,9 @@ test('timeline priorities, reminders and run sheet; vendors with quotes', async 
   expect(problems).toEqual([])
 })
 
-test('home page plan picker: your plans and samples, then the loading screen opens the plan', async ({ page }) => {
+test('home page plan picker: your plans and samples, then the loading screen opens the plan', async ({
+  page,
+}) => {
   const problems = watchConsole(page)
   await createByKeyboard(page) // a plan of our own, remembered in this browser
   await page.goto('/')
@@ -132,4 +169,28 @@ test('sample plans are read-only', async ({ page }) => {
   await page.goto('/plan/demo-community')
   await expect(page.getByText('You are viewing a shared plan. Changes are off.')).toBeVisible()
   await expectAccessible(page)
+})
+
+test('plans list, wizard errors, missing pages and phone width are accessible', async ({
+  page,
+}) => {
+  for (const path of ['/plans', '/no-such-page', '/plan/no-such-plan']) {
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expectAccessible(page)
+  }
+
+  await page.goto('/create')
+  await expectAccessible(page)
+  await page.getByRole('button', { name: /Continue/ }).click()
+  await page.getByRole('button', { name: /Continue/ }).click()
+  await expect(page.getByLabel('Celebration name')).toBeFocused()
+  await expectAccessible(page)
+
+  await page.setViewportSize({ width: 375, height: 812 })
+  for (const path of ['/', '/plan/demo-birthday']) {
+    await page.goto(path)
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expectAccessible(page)
+  }
 })

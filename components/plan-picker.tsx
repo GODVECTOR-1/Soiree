@@ -8,18 +8,26 @@ import { LoadingScreen } from '@/components/loading-screen'
 import { listLocalPlans, type LocalPlan } from '@/lib/local-plans'
 import { samples, type EventType } from '@/lib/schemas'
 import { shortDate } from '@/lib/format'
+import { eventLabels } from '@/lib/event-theme'
 
-const eventNames: Record<EventType, string> = { wedding: 'Wedding', birthday: 'Birthday', community: 'Community' }
-
-type RowProps = Omit<LocalPlan, 'date'> & { date?: string; note?: string; onChoose: (slug: string, title: string) => void }
+type RowProps = Omit<LocalPlan, 'date'> & {
+  date?: string
+  note?: string
+  onChoose: (slug: string, title: string) => void
+}
 
 function PlanRow({ slug, title, eventType, date, note, onChoose }: RowProps) {
   return (
     <li>
-      <button type="button" className="picker-item" data-event={eventType} onClick={() => onChoose(slug, title)}>
+      <button
+        type="button"
+        className="picker-item"
+        data-event={eventType}
+        onClick={() => onChoose(slug, title)}
+      >
         <span>
           <span className="eyebrow">
-            {[eventNames[eventType], date && shortDate(date), note].filter(Boolean).join(' · ')}
+            {[eventLabels[eventType], date && shortDate(date), note].filter(Boolean).join(' · ')}
           </span>
           <strong>{title}</strong>
         </span>
@@ -52,12 +60,23 @@ export function PlanPicker() {
 
   return (
     <>
-      <button type="button" className="outline-btn" onClick={open} aria-haspopup="dialog" aria-label="Your plans">
+      <button
+        type="button"
+        className="outline-btn"
+        onClick={open}
+        aria-haspopup="dialog"
+        aria-label="Your plans"
+      >
         <FolderHeart aria-hidden /> <span className="btn-label">Your plans</span>
       </button>
 
       {/* Clicks on the backdrop land on the <dialog> itself; clicks inside land on .picker-body. */}
-      <dialog ref={dialog} className="picker" aria-labelledby="picker-title" onClick={(e) => e.target === dialog.current && close()}>
+      <dialog
+        ref={dialog}
+        className="picker"
+        aria-labelledby="picker-title"
+        onClick={(e) => e.target === dialog.current && close()}
+      >
         <div className="picker-body">
           <div className="picker-head">
             <h2 id="picker-title">Your plans</h2>
@@ -67,7 +86,9 @@ export function PlanPicker() {
           </div>
 
           <section aria-labelledby="picker-mine">
-            <h3 id="picker-mine" className="eyebrow">Made in this browser</h3>
+            <h3 id="picker-mine" className="eyebrow">
+              Made in this browser
+            </h3>
             {plans.length ? (
               <ul className="picker-list">
                 {plans.map((p) => (
@@ -82,11 +103,20 @@ export function PlanPicker() {
           </section>
 
           <section aria-labelledby="picker-samples">
-            <h3 id="picker-samples" className="eyebrow">Sample plans</h3>
+            <h3 id="picker-samples" className="eyebrow">
+              Sample plans
+            </h3>
             <ul className="picker-list">
               {(Object.keys(samples) as EventType[]).map((k) => (
                 // Sample dates are moved forward on the server, so the list shows no date for them.
-                <PlanRow key={k} slug={`demo-${k}`} title={samples[k].title} eventType={k} note="Sample" onChoose={choose} />
+                <PlanRow
+                  key={k}
+                  slug={`demo-${k}`}
+                  title={samples[k].title}
+                  eventType={k}
+                  note="Sample"
+                  onChoose={choose}
+                />
               ))}
             </ul>
           </section>
@@ -98,7 +128,14 @@ export function PlanPicker() {
       </dialog>
 
       {opening && (
-        <LoadingScreen title="Opening your plan" steps={[`Opening ${opening}`, 'Fetching the latest version', 'Lining up what is due next']} />
+        <LoadingScreen
+          title="Opening your plan"
+          steps={[
+            `Opening ${opening}`,
+            'Fetching the latest version',
+            'Lining up what is due next',
+          ]}
+        />
       )}
     </>
   )

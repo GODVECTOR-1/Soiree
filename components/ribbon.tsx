@@ -4,7 +4,9 @@ import type { BudgetLine } from '@/lib/schemas'
 export function Ribbon({ lines }: { lines: BudgetLine[] }) {
   const total = lines.reduce((s, l) => s + l.amount, 0) || 1
   const label = lines
-    .map((l) => `${l.category} ${Math.round(l.sharePct)} percent${l.isPriority ? ', priority' : ''}`)
+    .map(
+      (l) => `${l.category} ${Math.round(l.sharePct)} percent${l.isPriority ? ', priority' : ''}`,
+    )
     .join(', ')
   return (
     <div className="ribbon-wrap" role="img" aria-label={`Budget split: ${label}`}>

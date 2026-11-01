@@ -27,11 +27,23 @@ export function mergeProgress(current: PlanVersion, draft: PlanVersion): PlanVer
   const added = current.vendors.filter((c) => c.custom && !draft.vendors.some((d) => d.id === c.id))
   return withEstimates({
     ...draft,
-    phases: draft.phases.map((p) => ({ ...p, tasks: p.tasks.map((t) => ({ ...t, done: done.get(t.id) ?? t.done })) })),
+    phases: draft.phases.map((p) => ({
+      ...p,
+      tasks: p.tasks.map((t) => ({ ...t, done: done.get(t.id) ?? t.done })),
+    })),
     vendors: [
       ...kept.map((d) => {
         const cur = current.vendors.find((c) => c.id === d.id)
-        return cur ? { ...d, status: cur.status, notes: cur.notes, name: cur.name, contact: cur.contact, quote: cur.quote } : d
+        return cur
+          ? {
+              ...d,
+              status: cur.status,
+              notes: cur.notes,
+              name: cur.name,
+              contact: cur.contact,
+              quote: cur.quote,
+            }
+          : d
       }),
       ...added,
     ],
@@ -40,23 +52,63 @@ export function mergeProgress(current: PlanVersion, draft: PlanVersion): PlanVer
 }
 
 /** Pure reducer: same inputs, same plan. */
-export function applyAction(input: PlanInput, v: PlanVersion, a: PlanAction): { input: PlanInput; version: PlanVersion } {
+export function applyAction(
+  input: PlanInput,
+  v: PlanVersion,
+  a: PlanAction,
+): { input: PlanInput; version: PlanVersion } {
   switch (a.type) {
     case 'task':
-      return { input, version: { ...v, phases: v.phases.map((p) => ({ ...p, tasks: p.tasks.map((t) => (t.id === a.id ? { ...t, done: !t.done } : t)) })) } }
+      return {
+        input,
+        version: {
+          ...v,
+          phases: v.phases.map((p) => ({
+            ...p,
+            tasks: p.tasks.map((t) => (t.id === a.id ? { ...t, done: !t.done } : t)),
+          })),
+        },
+      }
     case 'vendor':
-      return { input, version: { ...v, vendors: v.vendors.map((x) => (x.id === a.id ? patchVendor(x, a.patch) : x)) } }
+      return {
+        input,
+        version: {
+          ...v,
+          vendors: v.vendors.map((x) => (x.id === a.id ? patchVendor(x, a.patch) : x)),
+        },
+      }
     case 'vendor-add':
-      return { input, version: { ...v, vendors: [...v.vendors, customVendor(v, a.category, a.name)] } }
+      return {
+        input,
+        version: { ...v, vendors: [...v.vendors, customVendor(v, a.category, a.name)] },
+      }
     case 'vendor-remove':
-      return { input, version: { ...v, vendors: v.vendors.filter((x) => x.id !== a.id || !x.custom) } }
+      return {
+        input,
+        version: { ...v, vendors: v.vendors.filter((x) => x.id !== a.id || !x.custom) },
+      }
     case 'idea':
-      return { input, version: { ...v, ideas: v.ideas.map((i) => (i.id === a.id ? { ...i, saved: !i.saved } : i)) } }
+      return {
+        input,
+        version: {
+          ...v,
+          ideas: v.ideas.map((i) => (i.id === a.id ? { ...i, saved: !i.saved } : i)),
+        },
+      }
     case 'ideas':
       return { input, version: { ...v, ideas: a.ideas } }
     case 'budget':
-      return { input, version: withEstimates({ ...v, lines: v.lines.map((l) => ({ ...l, amount: a.amounts[l.id] ?? l.amount })) }) }
+      return {
+        input,
+        version: withEstimates({
+          ...v,
+          lines: v.lines.map((l) => ({ ...l, amount: a.amounts[l.id] ?? l.amount })),
+        }),
+      }
     case 'apply':
-      return { input: { ...input, ...a.result.inputPatch }, version: mergeProgress(v, a.result.draft) }
+      return {
+        input: { ...input, ...a.result.inputPatch },
+        version: mergeProgress(v, a.result.draft),
+      }
   }
 }

@@ -6,7 +6,11 @@ export type RunSheetItem = { at: number; time: string; title: string }
 type Slot = [offsetMin: number, title: string]
 
 /** When guests usually arrive, per event type (24-hour "HH:MM"). The run sheet is relative to this. */
-export const defaultStart: Record<EventType, string> = { wedding: '17:00', birthday: '19:00', community: '10:00' }
+export const defaultStart: Record<EventType, string> = {
+  wedding: '17:00',
+  birthday: '19:00',
+  community: '10:00',
+}
 
 // Offsets in minutes from guest arrival. Setup steps are negative.
 const slots: Record<EventType, Slot[]> = {
@@ -48,11 +52,19 @@ const slots: Record<EventType, Slot[]> = {
 /** Steps added from the user's own context: needs, priorities and size. */
 function contextSlots(input: PlanInput): Slot[] {
   const extra: Slot[] = []
-  if (input.accessibility) extra.push([-45, 'Check ramps, accessible seating and restrooms are clear'])
-  if (input.diet.length) extra.push([-20, `Label the ${input.diet.join(', ').toLowerCase()} dishes and brief the servers`])
-  if (input.eventType === 'wedding' && input.priorities.includes('Photo and video')) extra.push([75, 'Golden-hour portraits with the photographer'])
-  if (input.eventType === 'birthday' && input.priorities.includes('Entertainment')) extra.push([90, 'Second entertainment set or group game'])
-  if (input.eventType === 'community' && input.guestCount >= 200) extra.push([-15, 'Open the help desk and lost-and-found'])
+  if (input.accessibility)
+    extra.push([-45, 'Check ramps, accessible seating and restrooms are clear'])
+  if (input.diet.length)
+    extra.push([
+      -20,
+      `Label the ${input.diet.join(', ').toLowerCase()} dishes and brief the servers`,
+    ])
+  if (input.eventType === 'wedding' && input.priorities.includes('Photo and video'))
+    extra.push([75, 'Golden-hour portraits with the photographer'])
+  if (input.eventType === 'birthday' && input.priorities.includes('Entertainment'))
+    extra.push([90, 'Second entertainment set or group game'])
+  if (input.eventType === 'community' && input.guestCount >= 200)
+    extra.push([-15, 'Open the help desk and lost-and-found'])
   return extra
 }
 
@@ -69,7 +81,10 @@ export function clock(minutes: number) {
 }
 
 /** Day-of run sheet for the plan, starting from when guests arrive (24-hour "HH:MM"). */
-export function dayOfSchedule(input: PlanInput, start = defaultStart[input.eventType]): RunSheetItem[] {
+export function dayOfSchedule(
+  input: PlanInput,
+  start = defaultStart[input.eventType],
+): RunSheetItem[] {
   const base = toMinutes(start)
   return [...slots[input.eventType], ...contextSlots(input)]
     .sort((a, b) => a[0] - b[0])

@@ -22,8 +22,26 @@ export interface AiProvider {
 }
 
 const SUPPORTED = new Set([
-  '$id', '$defs', '$ref', '$anchor', 'type', 'format', 'title', 'description', 'enum', 'items', 'prefixItems', 'minItems',
-  'maxItems', 'minimum', 'maximum', 'anyOf', 'oneOf', 'properties', 'additionalProperties', 'required',
+  '$id',
+  '$defs',
+  '$ref',
+  '$anchor',
+  'type',
+  'format',
+  'title',
+  'description',
+  'enum',
+  'items',
+  'prefixItems',
+  'minItems',
+  'maxItems',
+  'minimum',
+  'maximum',
+  'anyOf',
+  'oneOf',
+  'properties',
+  'additionalProperties',
+  'required',
 ])
 
 function trim(node: unknown, isMap = false): unknown {
@@ -38,14 +56,19 @@ function trim(node: unknown, isMap = false): unknown {
 }
 
 /** JSON Schema from Zod, trimmed to the keywords Gemini structured output supports. Zod still validates the rest. */
-export const toModelSchema = (schema: z.ZodType) => trim(z.toJSONSchema(schema, { unrepresentable: 'any' }))
+export const toModelSchema = (schema: z.ZodType) =>
+  trim(z.toJSONSchema(schema, { unrepresentable: 'any' }))
 
 /**
  * Shared call policy for every provider: call, JSON-parse, Zod-validate; on a bad answer one retry with the problem
  * appended; then 502. Each attempt gets at most what is left of the request deadline; timeouts and 429s are not retried.
  * Logs task, model, latency and outcome only.
  */
-export async function generateValidated<T>(req: AiRequest<T>, model: string, call: (user: string, timeoutMs: number) => Promise<string>): Promise<T> {
+export async function generateValidated<T>(
+  req: AiRequest<T>,
+  model: string,
+  call: (user: string, timeoutMs: number) => Promise<string>,
+): Promise<T> {
   let user = req.user
   for (let attempt = 1; attempt <= 2; attempt++) {
     const timeoutMs = Math.min(req.timeoutMs, timeLeft() - AI_RESERVE_MS)
@@ -60,16 +83,40 @@ export async function generateValidated<T>(req: AiRequest<T>, model: string, cal
     try {
       const parsed = req.schema.safeParse(JSON.parse(await call(user, timeoutMs)))
       if (parsed.success) {
-        log('ai', { task: req.task, model, attempt, outcome, ms: Math.round(performance.now() - started) })
+        log('ai', {
+          task: req.task,
+          model,
+          attempt,
+          outcome,
+          ms: Math.round(performance.now() - started),
+        })
         return parsed.data
       }
       outcome = 'invalid'
-      problem = parsed.error.issues.slice(0, 6).map((i) => `${i.path.join('.') || 'root'}: ${i.message}`).join('; ')
+      problem = parsed.error.issues
+        .slice(0, 6)
+        .map((i) => `${i.path.join('.') || 'root'}: ${i.message}`)
+        .join('; ')
     } catch (e) {
-      outcome = e instanceof SyntaxError ? 'invalid_json' : e instanceof Error && /abort|timeout/i.test(e.name + e.message) ? 'timeout' : 'error'
-      status = typeof (e as { status?: unknown }).status === 'number' ? (e as { status: number }).status : undefined
+      outcome =
+        e instanceof SyntaxError
+          ? 'invalid_json'
+          : e instanceof Error && /abort|timeout/i.test(e.name + e.message)
+            ? 'timeout'
+            : 'error'
+      status =
+        typeof (e as { status?: unknown }).status === 'number'
+          ? (e as { status: number }).status
+          : undefined
     }
-    log('ai', { task: req.task, model, attempt, outcome, status, ms: Math.round(performance.now() - started) })
+    log('ai', {
+      task: req.task,
+      model,
+      attempt,
+      outcome,
+      status,
+      ms: Math.round(performance.now() - started),
+    })
     if (outcome === 'timeout' || status === 429) break // retrying a timeout doubles the wait; a used-up quota stays used up
     user = `${req.user}\n\nYour previous answer was rejected: ${problem.slice(0, 600)}\nReturn JSON that matches the schema and every rule.`
   }

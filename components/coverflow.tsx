@@ -1,11 +1,19 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type CSSProperties,
+} from 'react'
 import Image from 'next/image'
+import { Pause, Play } from 'lucide-react'
 
 // Adapted from Originkit's Coverflow Gallery (Smooth3DSlideshow). Kept: the 3D math and the autoplay preset.
 // Changed: sizes come from CSS (--card-w, --spread) so it fits any column, Framer-only code is gone, and autoplay
-// pauses on hover, keyboard focus, or prefers-reduced-motion.
+// pauses on hover or keyboard focus, starts paused under prefers-reduced-motion, and has a pause/play button (WCAG 2.2.2).
 
 export type CoverflowSlide = { src: string; alt: string }
 
@@ -19,10 +27,25 @@ const MOVE_S = 0.6
 const HOLD_S = 1.95
 const EASE = 'cubic-bezier(0.6, -0.28, 0.735, 0.045)'
 
+const REDUCED_MOTION = '(prefers-reduced-motion: reduce)'
+function subscribeMotion(onChange: () => void) {
+  const query = window.matchMedia(REDUCED_MOTION)
+  query.addEventListener('change', onChange)
+  return () => query.removeEventListener('change', onChange)
+}
+
 export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: string }) {
   const n = slides.length
   const [active, setActive] = useState(0)
   const [hovering, setHovering] = useState(false)
+  // null until the visitor chooses; until then reduced motion decides.
+  const [pausedChoice, setPausedChoice] = useState<boolean | null>(null)
+  const reducedMotion = useSyncExternalStore(
+    subscribeMotion,
+    () => window.matchMedia(REDUCED_MOTION).matches,
+    () => false,
+  )
+  const paused = pausedChoice ?? reducedMotion
   const lockRef = useRef(false)
 
   // Ignore input while a card is mid-move so rapid clicks don't stack up.
@@ -37,10 +60,10 @@ export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: 
   )
 
   useEffect(() => {
-    if (hovering || n < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (paused || hovering || n < 2) return
     const id = window.setInterval(() => go((a) => a + 1), HOLD_S * 1000)
     return () => window.clearInterval(id)
-  }, [hovering, n, go])
+  }, [paused, hovering, n, go])
 
   return (
     <div
@@ -87,12 +110,33 @@ export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: 
               onClick={() => !isActive && go(() => i)}
             >
               {/* Above the fold: load every photo now, the first one first (it is the LCP image). */}
-              <Image src={slide.src} alt={slide.alt} fill sizes="220px" loading="eager" fetchPriority={i === 0 ? 'high' : 'auto'} draggable={false} />
-              <div className="coverflow-dim" style={{ opacity: isActive ? 0 : DIM, transition: `opacity ${MOVE_S}s ${EASE}` }} />
+              <Image
+                src={slide.src}
+                alt={slide.alt}
+                fill
+                sizes="220px"
+                loading="eager"
+                fetchPriority={i === 0 ? 'high' : 'auto'}
+                draggable={false}
+              />
+              <div
+                className="coverflow-dim"
+                style={{ opacity: isActive ? 0 : DIM, transition: `opacity ${MOVE_S}s ${EASE}` }}
+              />
             </div>
           )
         })}
       </div>
+      {n > 1 && (
+        <button
+          type="button"
+          className="coverflow-toggle"
+          aria-label={paused ? 'Play slideshow' : 'Pause slideshow'}
+          onClick={() => setPausedChoice(!paused)}
+        >
+          {paused ? <Play aria-hidden /> : <Pause aria-hidden />}
+        </button>
+      )}
     </div>
   )
 }

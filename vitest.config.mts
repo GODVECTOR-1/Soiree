@@ -12,17 +12,21 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.{ts,tsx}'],
     env: { AI_PROVIDER: 'fake', DB_PROVIDER: 'memory', RATE_LIMIT_ENABLED: 'true', CRON_SECRET: 'test-cron-secret' },
     coverage: {
       provider: 'v8',
-      include: ['lib/domain/**', 'lib/server/**', 'lib/schemas.ts', 'lib/format.ts', 'app/api/**', 'scripts/check-secrets.ts'],
+      include: ['lib/**/*.ts', 'app/api/**', 'scripts/check-secrets.ts'],
       // Thin network adapters: exercised by `pnpm smoke` against real services, not by unit tests.
-      exclude: ['lib/server/ai/gemini.ts', 'lib/server/db/supabaseRepository.ts'],
+      // planRepository.ts holds types only.
+      exclude: ['lib/server/ai/gemini.ts', 'lib/server/db/supabaseRepository.ts', 'lib/server/db/planRepository.ts'],
       thresholds: {
-        lines: 75,
-        'lib/domain/**': { lines: 90, branches: 85 },
-        'lib/server/services/**': { lines: 80 },
+        lines: 95,
+        statements: 95,
+        functions: 95,
+        branches: 85,
+        'lib/domain/**': { lines: 98, branches: 88 },
+        'lib/server/services/**': { lines: 95 },
       },
     },
   },

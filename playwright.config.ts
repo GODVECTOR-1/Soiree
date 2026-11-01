@@ -13,6 +13,11 @@ export default defineConfig({
     command: `pnpm start -p ${PORT}`,
     url: `http://localhost:${PORT}/api/health`,
     reuseExistingServer: !process.env.CI,
-    env: { AI_PROVIDER: 'fake', DB_PROVIDER: 'memory', RATE_LIMIT_ENABLED: 'false', NEXT_PUBLIC_APP_URL: `http://localhost:${PORT}` },
+    env: {
+      AI_PROVIDER: 'fake',
+      DB_PROVIDER: 'memory',
+      RATE_LIMIT_ENABLED: 'false',
+      NEXT_PUBLIC_APP_URL: `http://localhost:${PORT}`,
+    },
   },
 })

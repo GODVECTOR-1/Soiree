@@ -25,7 +25,9 @@ export function buildDiff(current: PlanVersion, draft: PlanVersion): PlanDiff {
     budgetFrom: current.budgetTotal,
     budgetTo: draft.budgetTotal,
     rows,
-    impactedTasks: allTasks(current.phases).filter((t) => !t.done && t.tags?.some((tag) => moved.has(tag))).map((t) => t.title),
+    impactedTasks: allTasks(current.phases)
+      .filter((t) => !t.done && t.tags?.some((tag) => moved.has(tag)))
+      .map((t) => t.title),
     totalCheck: totalCheck(draft.lines, draft.budgetTotal),
   }
 }

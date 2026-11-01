@@ -15,21 +15,37 @@ const prompts: { q: string; view: View }[] = [
 ]
 
 type Turn = { role: 'user' | 'assistant'; text: string; references?: AskResponse['references'] }
-const refView: Record<AskResponse['references'][number]['kind'], View> = { budget: 'budget', task: 'timeline', vendor: 'vendors', idea: 'ideas' }
+const refView: Record<AskResponse['references'][number]['kind'], View> = {
+  budget: 'budget',
+  task: 'timeline',
+  vendor: 'vendors',
+  idea: 'ideas',
+}
 
-/** Ask drawer: grounded questions with up to 6 turns of history; reference chips open the matching tab. */
-export function PlannerDrawer({ slug, token, onClose, onSelect }: { slug: string; token: string | null; onClose: () => void; onSelect: (v: View) => void }) {
-  const closeRef = useRef<HTMLButtonElement>(null)
+/**
+ * Ask drawer: grounded questions with up to 6 turns of history; reference chips open the matching tab. A native modal
+ * <dialog> gives the focus trap, Esc to close and an inert page behind it.
+ */
+export function PlannerDrawer({
+  slug,
+  token,
+  onClose,
+  onSelect,
+}: {
+  slug: string
+  token: string | null
+  onClose: () => void
+  onSelect: (v: View) => void
+}) {
+  const dialog = useRef<HTMLDialogElement>(null)
   const [turns, setTurns] = useState<Turn[]>([])
   const [question, setQuestion] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  useEffect(() => closeRef.current?.focus(), [])
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+    if (!dialog.current?.open) dialog.current?.showModal()
+  }, [])
+  const close = () => dialog.current?.close()
 
   const ask = async (q: string) => {
     const text = q.trim().slice(0, 300)
@@ -50,15 +66,21 @@ export function PlannerDrawer({ slug, token, onClose, onSelect }: { slug: string
   }
 
   return (
-    <>
-      <div className="drawer-backdrop" onClick={onClose} aria-hidden />
-      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
+    // Clicks on the backdrop land on the <dialog> itself; clicks inside land on .drawer-body.
+    <dialog
+      ref={dialog}
+      className="drawer"
+      aria-labelledby="drawer-title"
+      onClose={onClose}
+      onClick={(e) => e.target === dialog.current && close()}
+    >
+      <div className="drawer-body">
         <div className="drawer-head">
           <div>
             <span className="eyebrow">Your planning partner</span>
             <h2 id="drawer-title">Ask the planner</h2>
           </div>
-          <button ref={closeRef} className="icon-btn" onClick={onClose} aria-label="Close planner">
+          <button className="icon-btn" onClick={close} aria-label="Close planner">
             <X aria-hidden />
           </button>
         </div>
@@ -81,7 +103,11 @@ export function PlannerDrawer({ slug, token, onClose, onSelect }: { slug: string
                   {!!t.references?.length && (
                     <div className="chip-row ref-row">
                       {t.references.map((r) => (
-                        <button key={`${r.kind}-${r.id}`} className="chip" onClick={() => onSelect(refView[r.kind])}>
+                        <button
+                          key={`${r.kind}-${r.id}`}
+                          className="chip"
+                          onClick={() => onSelect(refView[r.kind])}
+                        >
                           {r.label}
                         </button>
                       ))}
@@ -95,12 +121,17 @@ export function PlannerDrawer({ slug, token, onClose, onSelect }: { slug: string
             <LoadingScreen
               variant="inline"
               title="Looking through your plan"
-              steps={['Reading your budget and tasks', 'Checking vendors and ideas', 'Answering only from your plan']}
+              steps={[
+                'Reading your budget and tasks',
+                'Checking vendors and ideas',
+                'Answering only from your plan',
+              ]}
             />
           )}
           {!token && (
             <div className="assistant">
-              <Sparkles size={15} aria-hidden /> <span>Open your edit link to ask questions about this plan.</span>
+              <Sparkles size={15} aria-hidden />{' '}
+              <span>Open your edit link to ask questions about this plan.</span>
             </div>
           )}
         </div>
@@ -119,7 +150,12 @@ export function PlannerDrawer({ slug, token, onClose, onSelect }: { slug: string
           >
             <label>
               <span className="sr-only">Your question</span>
-              <input value={question} maxLength={300} onChange={(e) => setQuestion(e.target.value)} placeholder="Where can we save a little?" />
+              <input
+                value={question}
+                maxLength={300}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="Where can we save a little?"
+              />
             </label>
             <button className="primary-btn" type="submit" disabled={busy || !question.trim()}>
               Ask
@@ -128,12 +164,16 @@ export function PlannerDrawer({ slug, token, onClose, onSelect }: { slug: string
         )}
         <div className="drawer-links">
           {prompts.map((p) => (
-            <button key={p.q} onClick={() => (token ? void ask(p.q) : onSelect(p.view))} disabled={busy}>
+            <button
+              key={p.q}
+              onClick={() => (token ? void ask(p.q) : onSelect(p.view))}
+              disabled={busy}
+            >
               {p.q}
             </button>
           ))}
         </div>
-      </aside>
-    </>
+      </div>
+    </dialog>
   )
 }

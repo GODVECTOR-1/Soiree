@@ -9,7 +9,11 @@ import { toIcs } from '@/lib/domain/calendar'
 import { todayIso } from '@/lib/format'
 
 /** Save every open task as an all-day calendar entry with a reminder the day before. Runs in the browser only. */
-function downloadReminders({ slug, input, version }: Pick<ViewProps, 'slug' | 'input' | 'version'>) {
+function downloadReminders({
+  slug,
+  input,
+  version,
+}: Pick<ViewProps, 'slug' | 'input' | 'version'>) {
   const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+/, '')
   const ics = toIcs({ input, tasks: allTasks(version.phases), today: todayIso(), stamp, uid: slug })
   const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
@@ -29,10 +33,16 @@ export function TimelineView({ slug, input, version, canEdit, onAction }: ViewPr
         Anything already overdue moved to this week, so nothing slips quietly.
       </Heading>
       <div className="timeline-actions">
-        <button className="outline-btn" onClick={() => downloadReminders({ slug, input, version })} disabled={!open}>
+        <button
+          className="outline-btn"
+          onClick={() => downloadReminders({ slug, input, version })}
+          disabled={!open}
+        >
           <CalendarPlus aria-hidden /> Add {open} reminders to your calendar
         </button>
-        <span className="field-hint">Works with Google, Apple and Outlook calendars. Each reminder arrives the day before.</span>
+        <span className="field-hint">
+          Works with Google, Apple and Outlook calendars. Each reminder arrives the day before.
+        </span>
       </div>
       <div className="timeline">
         {version.phases.map((p, i) => (
@@ -46,7 +56,13 @@ export function TimelineView({ slug, input, version, canEdit, onAction }: ViewPr
             </div>
             <div className="task-list">
               {p.tasks.map((t) => (
-                <TaskRow key={t.id} task={t} input={input} canEdit={canEdit} onToggle={() => onAction({ type: 'task', id: t.id })} />
+                <TaskRow
+                  key={t.id}
+                  task={t}
+                  input={input}
+                  canEdit={canEdit}
+                  onToggle={() => onAction({ type: 'task', id: t.id })}
+                />
               ))}
             </div>
           </section>
@@ -61,10 +77,17 @@ export function TimelineView({ slug, input, version, canEdit, onAction }: ViewPr
           </div>
           <label className="start-time">
             Guests arrive at
-            <input type="time" value={start} onChange={(e) => e.target.value && setStart(e.target.value)} />
+            <input
+              type="time"
+              value={start}
+              onChange={(e) => e.target.value && setStart(e.target.value)}
+            />
           </label>
         </div>
-        <p className="muted">Built from your plan: setup, the key moments, and steps for your guests&apos; needs. Share it with every vendor two weeks out.</p>
+        <p className="muted">
+          Built from your plan: setup, the key moments, and steps for your guests&apos; needs. Share
+          it with every vendor two weeks out.
+        </p>
         <ol>
           {dayOfSchedule(input, start).map((item) => (
             <li key={`${item.at}-${item.title}`}>

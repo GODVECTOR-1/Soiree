@@ -35,7 +35,11 @@ const taskTemplates: Record<EventType, SeedTemplate[]> = {
     { title: 'Apply for permits', offset: 90, tags: ['Permits'] },
     { title: 'Recruit volunteer leads', offset: 75, tags: ['Volunteers'] },
     { title: 'Book sound and stage', offset: 60, tags: ['Sound and stage'] },
-    { title: 'Launch promotion: posters, groups, and local pages', offset: 45, tags: ['Promotion and reach'] },
+    {
+      title: 'Launch promotion: posters, groups, and local pages',
+      offset: 45,
+      tags: ['Promotion and reach'],
+    },
     { title: 'Confirm food stalls or caterers', offset: 30, tags: ['Food'] },
     { title: 'Brief volunteers and assign shifts', offset: 21, tags: ['Volunteers'] },
     { title: 'Run a second promotion push', offset: 14, tags: ['Promotion and reach'] },
@@ -46,11 +50,19 @@ const taskTemplates: Record<EventType, SeedTemplate[]> = {
 
 // Extra wedding steps when the notes or vibes describe a multi-day or traditional celebration.
 const multiDay: TaskSeed[] = [
-  { id: 'wedding-multi-0', title: 'Plan the schedule for each day of the celebration', offset: 120 },
+  {
+    id: 'wedding-multi-0',
+    title: 'Plan the schedule for each day of the celebration',
+    offset: 120,
+  },
   { id: 'wedding-multi-1', title: 'Arrange rooms and travel for out-of-town guests', offset: 90 },
 ]
 const traditional: TaskSeed[] = [
-  { id: 'wedding-trad-0', title: 'Confirm the officiant and ceremony rituals with both families', offset: 150 },
+  {
+    id: 'wedding-trad-0',
+    title: 'Confirm the officiant and ceremony rituals with both families',
+    offset: 150,
+  },
   { id: 'wedding-trad-1', title: 'Book fittings for traditional outfits', offset: 60 },
 ]
 
@@ -61,31 +73,72 @@ function needSeeds(input: PlanInput): TaskSeed[] {
   const notes = input.notes ?? ''
   const seeds: TaskSeed[] = []
   if (input.accessibility || /step[- ]free|wheelchair|ramp/i.test(notes))
-    seeds.push({ id: 'needs-access', title: 'Confirm step-free access and accessible restrooms', offset: 30 })
-  const diet = [...new Set([...input.diet, ...(notes.match(DIET_WORDS) ?? [])].map((d) => d.toLowerCase()))]
-  if (diet.length) seeds.push({ id: 'needs-diet', title: `Confirm ${diet.join(', ')} options with food vendors`, offset: 30 })
+    seeds.push({
+      id: 'needs-access',
+      title: 'Confirm step-free access and accessible restrooms',
+      offset: 30,
+    })
+  const diet = [
+    ...new Set([...input.diet, ...(notes.match(DIET_WORDS) ?? [])].map((d) => d.toLowerCase())),
+  ]
+  if (diet.length)
+    seeds.push({
+      id: 'needs-diet',
+      title: `Confirm ${diet.join(', ')} options with food vendors`,
+      offset: 30,
+    })
   if (/sign language|interpreter|deaf|hard of hearing/i.test(notes))
-    seeds.push({ id: 'needs-sign', title: 'Book a sign language interpreter and reserve clear sightlines', offset: 45 })
+    seeds.push({
+      id: 'needs-sign',
+      title: 'Book a sign language interpreter and reserve clear sightlines',
+      offset: 45,
+    })
   if (/sensory|autis|quiet (room|space|corner)|neurodivergent/i.test(notes))
-    seeds.push({ id: 'needs-sensory', title: 'Set up a quiet, low-light space and share a sensory-friendly schedule', offset: 14 })
+    seeds.push({
+      id: 'needs-sensory',
+      title: 'Set up a quiet, low-light space and share a sensory-friendly schedule',
+      offset: 14,
+    })
   return seeds
 }
 
 /** Every task seed for a plan, with ids from the template index (never from the phase). */
 export function taskSeeds(input: PlanInput): TaskSeed[] {
-  const seeds: TaskSeed[] = taskTemplates[input.eventType].map((t, n) => ({ ...t, id: `${input.eventType}-${n}` }))
+  const seeds: TaskSeed[] = taskTemplates[input.eventType].map((t, n) => ({
+    ...t,
+    id: `${input.eventType}-${n}`,
+  }))
   if (input.eventType === 'wedding') {
     const text = `${input.notes ?? ''} ${input.vibes.join(' ')}`
-    if (/multi[- ]?day|two[- ]day|three[- ]day|several days|weekend/i.test(text)) seeds.push(...multiDay)
-    if (/traditional|mehendi|mehndi|sangeet|haldi|ritual|ceremony/i.test(text)) seeds.push(...traditional)
+    if (/multi[- ]?day|two[- ]day|three[- ]day|several days|weekend/i.test(text))
+      seeds.push(...multiDay)
+    if (/traditional|mehendi|mehndi|sangeet|haldi|ritual|ceremony/i.test(text))
+      seeds.push(...traditional)
   }
   return [...seeds, ...needSeeds(input)]
 }
 
 const phaseFor = (offset: number) =>
-  offset >= 270 ? '12 months out' : offset >= 150 ? '6 months out' : offset >= 60 ? '3 months out'
-    : offset >= 8 ? '1 month out' : offset >= 1 ? 'Final week' : 'Day of'
-const PHASE_ORDER = ['This week', '12 months out', '6 months out', '3 months out', '1 month out', 'Final week', 'Day of']
+  offset >= 270
+    ? '12 months out'
+    : offset >= 150
+      ? '6 months out'
+      : offset >= 60
+        ? '3 months out'
+        : offset >= 8
+          ? '1 month out'
+          : offset >= 1
+            ? 'Final week'
+            : 'Day of'
+const PHASE_ORDER = [
+  'This week',
+  '12 months out',
+  '6 months out',
+  '3 months out',
+  '1 month out',
+  'Final week',
+  'Day of',
+]
 const URGENT = Number.MAX_SAFE_INTEGER
 
 /**
@@ -106,7 +159,11 @@ export function toPhases(tasks: Task[], date: string, today: string): Phase[] {
     }
     buckets.set(label, [...(buckets.get(label) ?? []), { ...t, dueLabel }])
   }
-  return PHASE_ORDER.filter((l) => buckets.has(l)).map((label) => ({ id: slugId(label), label, tasks: buckets.get(label) ?? [] }))
+  return PHASE_ORDER.filter((l) => buckets.has(l)).map((label) => ({
+    id: slugId(label),
+    label,
+    tasks: buckets.get(label) ?? [],
+  }))
 }
 
 /** All tasks of a plan, in phase order. */
@@ -127,7 +184,8 @@ export function taskPriority(t: Task, input: PlanInput): { level: TaskPriority; 
   const tied = t.tags?.find((tag) => input.priorities.includes(tag))
   if (tied) return { level: 'high', reason: `Your priority: ${tied}` }
   if (t.id.startsWith('needs-')) return { level: 'high', reason: 'A guest need' }
-  if (BOOKS_EARLY.test(t.title) && (t.offsetDays ?? 0) >= 60) return { level: 'high', reason: 'Books out early' }
+  if (BOOKS_EARLY.test(t.title) && (t.offsetDays ?? 0) >= 60)
+    return { level: 'high', reason: 'Books out early' }
   if (t.offsetDays === 0) return { level: 'low', reason: 'On the day' }
   return { level: 'medium', reason: '' }
 }
@@ -138,12 +196,28 @@ export type TimelinePersonalization = {
 }
 
 /** Date-aware phases from the templates, optionally personalized (renames keep ids; additions get `note-{n}`). */
-export function buildPhases(input: PlanInput, today: string, personal: TimelinePersonalization = {}): Phase[] {
+export function buildPhases(
+  input: PlanInput,
+  today: string,
+  personal: TimelinePersonalization = {},
+): Phase[] {
   const tasks: Task[] = taskSeeds(input).map((s) => ({
-    id: s.id, title: personal.renames?.[s.id] ?? s.title, dueLabel: '', done: false, tags: s.tags ?? [], offsetDays: s.offset,
+    id: s.id,
+    title: personal.renames?.[s.id] ?? s.title,
+    dueLabel: '',
+    done: false,
+    tags: s.tags ?? [],
+    offsetDays: s.offset,
   }))
   ;(personal.additions ?? []).forEach((a, n) =>
-    tasks.push({ id: `note-${n}`, title: a.title, dueLabel: '', done: false, tags: a.tags ?? [], offsetDays: a.offsetDays }),
+    tasks.push({
+      id: `note-${n}`,
+      title: a.title,
+      dueLabel: '',
+      done: false,
+      tags: a.tags ?? [],
+      offsetDays: a.offsetDays,
+    }),
   )
   return toPhases(tasks, input.date, today)
 }

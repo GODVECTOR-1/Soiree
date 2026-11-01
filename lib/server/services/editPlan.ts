@@ -13,7 +13,11 @@ import { reload } from './shared'
  * Change the CURRENT version with compare-and-set on `rev`: on a miss, re-read and re-apply (3 tries), then 409.
  * `change` may throw (unknown id, bad allocation) and is re-run against fresh data on every attempt.
  */
-export async function editCurrent(c: Container, plan: PlanRecord, change: (v: StoredVersion) => VersionPatch): Promise<PlanVersion> {
+export async function editCurrent(
+  c: Container,
+  plan: PlanRecord,
+  change: (v: StoredVersion) => VersionPatch,
+): Promise<PlanVersion> {
   let p = plan
   for (let attempt = 0; attempt < CAS_RETRIES; attempt++) {
     const patch = change(p.current)
@@ -28,11 +32,21 @@ export async function editCurrent(c: Container, plan: PlanRecord, change: (v: St
 export const updateTask = (c: Container, plan: PlanRecord, taskId: string, done: boolean) =>
   editCurrent(c, plan, (v) => {
     if (!allTasks(v.phases).some((t) => t.id === taskId)) throw errors.itemNotFound('task')
-    return { phases: v.phases.map((p) => ({ ...p, tasks: p.tasks.map((t) => (t.id === taskId ? { ...t, done } : t)) })) }
+    return {
+      phases: v.phases.map((p) => ({
+        ...p,
+        tasks: p.tasks.map((t) => (t.id === taskId ? { ...t, done } : t)),
+      })),
+    }
   })
 
 /** Update a vendor's status, notes, name, contact or quote (the schema whitelists the fields). */
-export const updateVendor = (c: Container, plan: PlanRecord, vendorId: string, patch: VendorPatch) =>
+export const updateVendor = (
+  c: Container,
+  plan: PlanRecord,
+  vendorId: string,
+  patch: VendorPatch,
+) =>
   editCurrent(c, plan, (v) => {
     if (!v.vendors.some((x) => x.id === vendorId)) throw errors.itemNotFound('vendor')
     return { vendors: v.vendors.map((x) => (x.id === vendorId ? patchVendor(x, patch) : x)) }
@@ -65,8 +79,13 @@ export const updateIdea = (c: Container, plan: PlanRecord, ideaId: string, saved
 /** Manual allocation: every id must exist and lines must add up to the budget exactly. Re-derives shares and estimates. */
 export const saveBudget = (c: Container, plan: PlanRecord, amounts: Record<string, number>) =>
   editCurrent(c, plan, (v) => {
-    if (Object.keys(amounts).some((id) => !v.lines.some((l) => l.id === id))) throw errors.unsupported('One of those budget lines is not in this plan.')
-    const next = withEstimates({ ...v, lines: v.lines.map((l) => ({ ...l, amount: amounts[l.id] ?? l.amount })) })
-    if (!totalCheck(next.lines, next.budgetTotal).ok) throw errors.unsupported('Allocations must add up to the budget')
+    if (Object.keys(amounts).some((id) => !v.lines.some((l) => l.id === id)))
+      throw errors.unsupported('One of those budget lines is not in this plan.')
+    const next = withEstimates({
+      ...v,
+      lines: v.lines.map((l) => ({ ...l, amount: amounts[l.id] ?? l.amount })),
+    })
+    if (!totalCheck(next.lines, next.budgetTotal).ok)
+      throw errors.unsupported('Allocations must add up to the budget')
     return { lines: next.lines, vendors: next.vendors }
   })

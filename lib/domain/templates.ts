@@ -3,7 +3,14 @@ import { categories } from '../categories'
 
 /** How a budget line behaves when money moves: flexible gives first, fixed gives last, buffer absorbs surprises. */
 export type Flex = 'fixed' | 'semi' | 'flexible' | 'buffer'
-export type LineTemplate = { label: string; share: number; flex: Flex; perGuest?: boolean; venue?: boolean; vendor?: false }
+export type LineTemplate = {
+  label: string
+  share: number
+  flex: Flex
+  perGuest?: boolean
+  venue?: boolean
+  vendor?: false
+}
 
 /** Neutral default shares per event type. Labels equal `lib/categories.ts` (+ Buffer). Each sums to 100. */
 export const budgetTemplates: Record<EventType, LineTemplate[]> = {
@@ -37,19 +44,22 @@ export const budgetTemplates: Record<EventType, LineTemplate[]> = {
 export const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 
 /** Percentage with one decimal; 0 when the total is 0. */
-export const pct = (amount: number, total: number) => (total > 0 ? Math.round((amount / total) * 1000) / 10 : 0)
+export const pct = (amount: number, total: number) =>
+  total > 0 ? Math.round((amount / total) * 1000) / 10 : 0
 
 /** Stable, URL-safe id from a label ("Photo and video" -> "photo-and-video"). */
 export const slugId = (label: string) => label.toLowerCase().replace(/[^a-z0-9]+/g, '-')
 
 /** The template line for a category, if any. */
-export const templateFor = (type: EventType, label: string) => budgetTemplates[type].find((t) => t.label === label)
+export const templateFor = (type: EventType, label: string) =>
+  budgetTemplates[type].find((t) => t.label === label)
 
 /** Lowest share (percent points) a line may fall to before floors are "broken": half its default. */
 export const floorShare = (t: LineTemplate) => t.share / 2
 
 /** Amounts round to a unit so lines read like a plan, not a calculation (INR 100, others 10, 1 for tiny budgets). */
-export const planningUnit = (total: number, currency: Currency) => (total < 2000 ? 1 : currency === 'INR' ? 100 : 10)
+export const planningUnit = (total: number, currency: Currency) =>
+  total < 2000 ? 1 : currency === 'INR' ? 100 : 10
 
 /** Split `amount` into integers proportional to `weights` that add up exactly (largest remainder). */
 export function distribute(amount: number, weights: number[]): number[] {
@@ -71,6 +81,7 @@ export function priorityError(eventType: EventType, priorities: string[]): strin
   if (priorities.length < 1 || priorities.length > 3) return 'Choose one to three priorities.'
   if (new Set(priorities).size !== priorities.length) return 'Each priority can be chosen once.'
   const allowed = categories[eventType]
-  if (priorities.some((p) => !allowed.includes(p))) return 'One of the priorities does not fit this event type.'
+  if (priorities.some((p) => !allowed.includes(p)))
+    return 'One of the priorities does not fit this event type.'
   return null
 }

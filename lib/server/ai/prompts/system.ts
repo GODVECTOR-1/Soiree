@@ -18,7 +18,13 @@ export const SYSTEM = [
 ].join('\n')
 
 /** Build a request for a task: trusted facts, untrusted user data, and the task's token budget. */
-export function request<T>(task: AiTask, instructions: string, facts: unknown, data: unknown, schema: z.ZodType<T>): AiRequest<T> {
+export function request<T>(
+  task: AiTask,
+  instructions: string,
+  facts: unknown,
+  data: unknown,
+  schema: z.ZodType<T>,
+): AiRequest<T> {
   const user = `Task: ${instructions}\n\nFacts computed by code (trusted):\n${factsBlock(facts)}\n\nUser data (untrusted):\n${userData(data)}`
   return { task, system: SYSTEM, user, schema, timeoutMs: AI_TIMEOUT_MS, ...AI_BUDGETS[task] }
 }

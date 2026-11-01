@@ -94,10 +94,19 @@ export const PlanVersion = z.object({
 export type PlanVersion = z.infer<typeof PlanVersion>
 
 /** Plan input fields a scenario may change. Picked (not `.partial()`) so defaults never leak into a patch. */
-export const InputPatch = PlanInput.pick({ totalBudget: true, guestCount: true, date: true, priorities: true }).partial()
+export const InputPatch = PlanInput.pick({
+  totalBudget: true,
+  guestCount: true,
+  date: true,
+  priorities: true,
+}).partial()
 export type InputPatch = z.infer<typeof InputPatch>
 
-export const HistoryItem = z.object({ version: z.number().int(), createdAt: z.string(), scenario: z.string().optional() })
+export const HistoryItem = z.object({
+  version: z.number().int(),
+  createdAt: z.string(),
+  scenario: z.string().optional(),
+})
 export type HistoryItem = z.infer<typeof HistoryItem>
 
 /** A plan as the API returns it: the current applied version only, never a draft. */
@@ -111,7 +120,11 @@ export const Plan = z.object({
 export type Plan = z.infer<typeof Plan>
 
 export const DiffRow = z.object({
-  category: z.string(), before: z.number(), after: z.number(), deltaPct: z.number(), protected: z.boolean(),
+  category: z.string(),
+  before: z.number(),
+  after: z.number(),
+  deltaPct: z.number(),
+  protected: z.boolean(),
 })
 export type DiffRow = z.infer<typeof DiffRow>
 
@@ -128,7 +141,14 @@ export type PlanDiff = z.infer<typeof PlanDiff>
 
 /** budget_change: percent -50..100; guest_change: new guest count 1..5000; date_change: days -365..365. */
 export const ScenarioInput = z.object({
-  kind: z.enum(['budget_change', 'guest_change', 'venue_cancelled', 'date_change', 'reprioritize', 'custom']),
+  kind: z.enum([
+    'budget_change',
+    'guest_change',
+    'venue_cancelled',
+    'date_change',
+    'reprioritize',
+    'custom',
+  ]),
   value: z.number().optional(),
   priorities: z.array(z.string()).max(3).optional(),
   text: z.string().max(300).optional(),
@@ -140,13 +160,21 @@ export type WhatIfResult = z.infer<typeof WhatIfResult>
 
 export const AskRequest = z.object({
   question: z.string().trim().min(1).max(300),
-  history: z.array(z.object({ role: z.enum(['user', 'assistant']), text: z.string().max(900) })).max(6),
+  history: z
+    .array(z.object({ role: z.enum(['user', 'assistant']), text: z.string().max(900) }))
+    .max(6),
 })
 export type AskRequest = z.infer<typeof AskRequest>
 
 export const AskResponse = z.object({
   answer: z.string().max(900),
-  references: z.array(z.object({ kind: z.enum(['budget', 'task', 'vendor', 'idea']), id: z.string(), label: z.string() })),
+  references: z.array(
+    z.object({
+      kind: z.enum(['budget', 'task', 'vendor', 'idea']),
+      id: z.string(),
+      label: z.string(),
+    }),
+  ),
 })
 export type AskResponse = z.infer<typeof AskResponse>
 
@@ -175,25 +203,57 @@ export const NewVendor = z.strictObject({
 export type NewVendor = z.infer<typeof NewVendor>
 export const IdeaPatch = z.object({ saved: z.boolean() })
 export const RegenerateRequest = z.object({ feedback: z.string().trim().max(300).optional() })
-export const BudgetPatch = z.object({ amounts: z.record(z.string(), z.number().int().nonnegative().max(1_000_000_000)) })
+export const BudgetPatch = z.object({
+  amounts: z.record(z.string(), z.number().int().nonnegative().max(1_000_000_000)),
+})
 
 export const samples: Record<EventType, PlanInput> = {
   wedding: {
-    eventType: 'wedding', title: "Priya and Arjun's celebration", city: 'Bengaluru',
-    date: '2027-02-14', planningStart: '2026-10-31', guestCount: 120, cityTier: 1, currency: 'INR',
-    totalBudget: 300000, priorities: ['Catering', 'Photo and video'], vibes: ['Garden', 'Golden hour'],
-    diet: [], accessibility: false, notes: 'A warm garden supper.',
+    eventType: 'wedding',
+    title: "Priya and Arjun's celebration",
+    city: 'Bengaluru',
+    date: '2027-02-14',
+    planningStart: '2026-10-31',
+    guestCount: 120,
+    cityTier: 1,
+    currency: 'INR',
+    totalBudget: 300000,
+    priorities: ['Catering', 'Photo and video'],
+    vibes: ['Garden', 'Golden hour'],
+    diet: [],
+    accessibility: false,
+    notes: 'A warm garden supper.',
   },
   birthday: {
-    eventType: 'birthday', title: "Meera's 30th birthday", city: 'Mumbai',
-    date: '2026-12-08', planningStart: '2026-10-31', guestCount: 40, cityTier: 2, currency: 'INR',
-    totalBudget: 80000, priorities: ['Food and cake', 'Entertainment'], vibes: ['Rooftop evening', 'Playful'],
-    diet: [], accessibility: false, notes: 'A lively dinner with friends.',
+    eventType: 'birthday',
+    title: "Meera's 30th birthday",
+    city: 'Mumbai',
+    date: '2026-12-08',
+    planningStart: '2026-10-31',
+    guestCount: 40,
+    cityTier: 2,
+    currency: 'INR',
+    totalBudget: 80000,
+    priorities: ['Food and cake', 'Entertainment'],
+    vibes: ['Rooftop evening', 'Playful'],
+    diet: [],
+    accessibility: false,
+    notes: 'A lively dinner with friends.',
   },
   community: {
-    eventType: 'community', title: "Lakeview residents' winter fair", city: 'Pune',
-    date: '2027-01-23', planningStart: '2026-10-31', guestCount: 250, cityTier: 2, currency: 'INR',
-    totalBudget: 180000, priorities: ['Promotion and reach', 'Food'], vibes: ['Family friendly', 'Outdoor'],
-    diet: ['Vegetarian'], accessibility: true, notes: 'A welcoming neighborhood gathering.',
+    eventType: 'community',
+    title: "Lakeview residents' winter fair",
+    city: 'Pune',
+    date: '2027-01-23',
+    planningStart: '2026-10-31',
+    guestCount: 250,
+    cityTier: 2,
+    currency: 'INR',
+    totalBudget: 180000,
+    priorities: ['Promotion and reach', 'Food'],
+    vibes: ['Family friendly', 'Outdoor'],
+    diet: ['Vegetarian'],
+    accessibility: true,
+    notes: 'A welcoming neighborhood gathering.',
   },
 }

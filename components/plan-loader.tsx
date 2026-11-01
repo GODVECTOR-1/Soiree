@@ -6,7 +6,18 @@ import { PlanDashboard } from '@/components/plan-dashboard'
 import type { Plan } from '@/lib/schemas'
 import { applyAction, type PlanAction } from '@/lib/domain/actions'
 import { allTasks } from '@/lib/domain/timeline'
-import { addVendor, ApiError, applyVersion, errorMessage, getPlan, removeVendor, saveBudget, updateIdea, updateTask, updateVendor } from '@/lib/api'
+import {
+  addVendor,
+  ApiError,
+  applyVersion,
+  errorMessage,
+  getPlan,
+  removeVendor,
+  saveBudget,
+  updateIdea,
+  updateTask,
+  updateVendor,
+} from '@/lib/api'
 import { rememberPlan } from '@/lib/local-plans'
 import { usePlanAccess } from '@/hooks/usePlanAccess'
 import { LoadingScreen } from '@/components/loading-screen'
@@ -18,15 +29,28 @@ type State =
   | { slug: string; status: 'ready'; plan: Plan }
 
 /** Server write for an action. Optimistic actions were already applied locally; `ideas` was stored by regenerate. */
-async function persist(slug: string, token: string, plan: Plan, action: PlanAction): Promise<Plan | void> {
+async function persist(
+  slug: string,
+  token: string,
+  plan: Plan,
+  action: PlanAction,
+): Promise<Plan | void> {
   const v = plan.current
   switch (action.type) {
     case 'task':
-      return updateTask(slug, token, action.id, !allTasks(v.phases).find((t) => t.id === action.id)?.done)
+      return updateTask(
+        slug,
+        token,
+        action.id,
+        !allTasks(v.phases).find((t) => t.id === action.id)?.done,
+      )
     case 'vendor':
       return updateVendor(slug, token, action.id, action.patch)
     case 'vendor-add':
-      return { ...plan, current: await addVendor(slug, token, { category: action.category, name: action.name }) }
+      return {
+        ...plan,
+        current: await addVendor(slug, token, { category: action.category, name: action.name }),
+      }
     case 'vendor-remove':
       return removeVendor(slug, token, action.id)
     case 'idea':
@@ -56,7 +80,11 @@ export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view'
       .then((plan) => live && setState({ slug, status: 'ready', plan }))
       .catch((e: unknown) => {
         if (!live) return
-        setState(e instanceof ApiError && e.status === 404 ? { slug, status: 'missing' } : { slug, status: 'error', message: errorMessage(e) })
+        setState(
+          e instanceof ApiError && e.status === 404
+            ? { slug, status: 'missing' }
+            : { slug, status: 'error', message: errorMessage(e) },
+        )
       })
     return () => {
       live = false
@@ -67,33 +95,61 @@ export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view'
   const canEdit = !!token && !!plan && !plan.readOnly
 
   useEffect(() => {
-    if (plan && canEdit) rememberPlan({ slug, title: plan.input.title, eventType: plan.input.eventType, date: plan.input.date })
+    if (plan && canEdit)
+      rememberPlan({
+        slug,
+        title: plan.input.title,
+        eventType: plan.input.eventType,
+        date: plan.input.date,
+      })
   }, [plan, canEdit, slug])
 
   if (current.status === 'loading')
     return (
       <main id="main">
-        <LoadingScreen title="Opening your plan" steps={['Fetching the latest version', 'Checking the budget adds up', 'Lining up what is due next']} />
+        <LoadingScreen
+          title="Opening your plan"
+          steps={[
+            'Fetching the latest version',
+            'Checking the budget adds up',
+            'Lining up what is due next',
+          ]}
+        />
       </main>
     )
 
   if (current.status !== 'ready')
     return (
-      <main className="landing" id="main" style={{ minHeight: '100vh', display: 'grid', placeItems: 'center', textAlign: 'center' }}>
+      <main className="landing center-page" id="main">
         <div>
-          <span className="eyebrow">{current.status === 'missing' ? 'Plan not found' : 'Something went wrong'}</span>
-          <h1 className="serif" style={{ fontSize: 44, margin: '14px 0' }}>
-            {current.status === 'missing' ? 'We couldn’t find that plan' : 'We couldn’t load this plan'}
+          <span className="eyebrow">
+            {current.status === 'missing' ? 'Plan not found' : 'Something went wrong'}
+          </span>
+          <h1>
+            {current.status === 'missing'
+              ? 'We couldn’t find that plan'
+              : 'We couldn’t load this plan'}
           </h1>
           <p className="muted" role="alert">
-            {current.status === 'missing' ? 'It may have expired, or the link may be incomplete.' : current.message}
+            {current.status === 'missing'
+              ? 'It may have expired, or the link may be incomplete.'
+              : current.message}
           </p>
-          <div className="hero-actions" style={{ justifyContent: 'center' }}>
+          <div className="hero-actions">
             {current.status === 'error' && (
-              <button className="primary-btn" onClick={() => setAttempt((n) => n + 1)}>Try again</button>
+              <button className="primary-btn" onClick={() => setAttempt((n) => n + 1)}>
+                Try again
+              </button>
             )}
-            <Link className={current.status === 'error' ? 'outline-btn' : 'primary-btn'} href="/create">Start a plan</Link>
-            <Link className="outline-btn" href="/plans">Your plans</Link>
+            <Link
+              className={current.status === 'error' ? 'outline-btn' : 'primary-btn'}
+              href="/create"
+            >
+              Start a plan
+            </Link>
+            <Link className="outline-btn" href="/plans">
+              Your plans
+            </Link>
           </div>
         </div>
       </main>
@@ -122,5 +178,14 @@ export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view'
     }
   }
 
-  return <PlanDashboard slug={slug} input={ready.input} version={ready.current} canEdit={canEdit} token={canEdit ? token : null} onAction={onAction} />
+  return (
+    <PlanDashboard
+      slug={slug}
+      input={ready.input}
+      version={ready.current}
+      canEdit={canEdit}
+      token={canEdit ? token : null}
+      onAction={onAction}
+    />
+  )
 }

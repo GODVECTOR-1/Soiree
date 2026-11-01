@@ -63,7 +63,9 @@ function parseBody<B>(schema: z.ZodType<B>, text: string): B {
   const parsed = schema.safeParse(json)
   if (parsed.success) return parsed.data
   const field = parsed.error.issues[0]?.path.join('.')
-  throw errors.validation(field ? `Check the ${field} field. It is missing or not valid.` : undefined)
+  throw errors.validation(
+    field ? `Check the ${field} field. It is missing or not valid.` : undefined,
+  )
 }
 
 async function authorize(c: Container, req: Request, slug = ''): Promise<PlanRecord> {
@@ -79,12 +81,18 @@ async function authorize(c: Container, req: Request, slug = ''): Promise<PlanRec
 /** Turn any thrown value into an `ApiErrorBody` response. Unknown errors become a generic 500 with the request id. */
 export function errorResponse(e: unknown, requestId: string): Response {
   const err = e instanceof AppError ? e : null
-  if (!err) log('unhandled_error', { requestId, name: e instanceof Error ? e.name : typeof e, detail: e instanceof Error ? e.message.slice(0, 200) : undefined })
+  if (!err)
+    log('unhandled_error', {
+      requestId,
+      name: e instanceof Error ? e.name : typeof e,
+      detail: e instanceof Error ? e.message.slice(0, 200) : undefined,
+    })
   const status = err?.status ?? 500
   const body = {
     error: {
       code: err?.code ?? 'INTERNAL',
-      message: err?.message ?? `Something went wrong. Please try again. (Ref ${requestId.slice(0, 8)})`,
+      message:
+        err?.message ?? `Something went wrong. Please try again. (Ref ${requestId.slice(0, 8)})`,
       ...(err?.retryAfterSec !== undefined && { retryAfterSec: err.retryAfterSec }),
     },
   }
@@ -97,7 +105,10 @@ export function errorResponse(e: unknown, requestId: string): Response {
  * Route lifecycle: request id, 16 KB body cap (413), content-type check (415), per-IP rate limit (429), token auth
  * (401/403/404), Zod parse (400), service, response. The handler returns a Response, a JSON value, or null (204).
  */
-export function withHandler<B = undefined>(opts: Options<B>, fn: (ctx: HandlerContext<B>) => Promise<Response | object | null>) {
+export function withHandler<B = undefined>(
+  opts: Options<B>,
+  fn: (ctx: HandlerContext<B>) => Promise<Response | object | null>,
+) {
   return async (req: Request, route: RouteContext): Promise<Response> => {
     const requestId = randomUUID()
     const started = performance.now()
@@ -106,19 +117,37 @@ export function withHandler<B = undefined>(opts: Options<B>, fn: (ctx: HandlerCo
       const c = container()
       const params = await route.params
       const text = opts.body ? await readText(req) : ''
-      if (opts.body && text.trim() && !req.headers.get('content-type')?.includes('application/json'))
+      if (
+        opts.body &&
+        text.trim() &&
+        !req.headers.get('content-type')?.includes('application/json')
+      )
         throw new AppError('UNSUPPORTED_MEDIA_TYPE', 415, 'Send the request as JSON.')
       if (opts.limit) await limitIp(c, opts.limit, ipHash(req.headers, c.salt))
-      const plan = opts.auth ? await authorize(c, req, params.slug) : (undefined as unknown as PlanRecord)
+      const plan = opts.auth
+        ? await authorize(c, req, params.slug)
+        : (undefined as unknown as PlanRecord)
       const body = opts.body ? parseBody(opts.body, text) : (undefined as B)
-      const out = await withDeadline(REQUEST_BUDGET_MS, () => fn({ req, requestId, params, body, plan, c }))
-      res = out instanceof Response ? out : out === null ? new Response(null, { status: 204 }) : Response.json(out)
+      const out = await withDeadline(REQUEST_BUDGET_MS, () =>
+        fn({ req, requestId, params, body, plan, c }),
+      )
+      res =
+        out instanceof Response
+          ? out
+          : out === null
+            ? new Response(null, { status: 204 })
+            : Response.json(out)
       res.headers.set('x-request-id', requestId)
       if (!res.headers.has('cache-control')) res.headers.set('cache-control', 'no-store')
     } catch (e) {
       res = errorResponse(e, requestId)
     }
-    log('request', { requestId, endpoint: opts.name, status: res.status, ms: Math.round(performance.now() - started) })
+    log('request', {
+      requestId,
+      endpoint: opts.name,
+      status: res.status,
+      ms: Math.round(performance.now() - started),
+    })
     return res
   }
 }

@@ -3,22 +3,67 @@ import { pct, templateFor } from './templates'
 
 /** Template questions per category, used when no personalized questions are available. */
 export const vendorQuestions: Record<string, string[]> = {
-  Catering: ['What is included per plate, and what costs extra?', 'When do you need the final guest count?', 'Can we do a tasting before booking?'],
-  'Photo and video': ['How many hours of coverage, and how many edited photos?', 'When will we receive the final files?', 'Who covers if the lead photographer is unwell?'],
-  'Venue and rentals': ['What is the capacity, and is there step-free access?', 'What are the curfew and noise rules?', 'What is the cancellation policy?'],
-  'Music and sound': ['Is sound equipment included?', 'How long is each set, and what happens in breaks?', 'What power do you need from the venue?'],
-  'Decor and flowers': ['Which flowers are in season on our date?', 'Are setup and teardown included?', 'Can pieces be reused between ceremony and dinner?'],
-  'Food and cake': ['What is the per-head price at our guest count?', 'Can you handle dietary needs?', 'When must the order be final?'],
-  Entertainment: ['How long is the performance?', 'What space and power do you need?', 'Which age range does it suit best?'],
-  Venue: ['What is the capacity and the minimum spend?', 'Is outside decor allowed?', 'What is the cancellation policy?'],
+  Catering: [
+    'What is included per plate, and what costs extra?',
+    'When do you need the final guest count?',
+    'Can we do a tasting before booking?',
+  ],
+  'Photo and video': [
+    'How many hours of coverage, and how many edited photos?',
+    'When will we receive the final files?',
+    'Who covers if the lead photographer is unwell?',
+  ],
+  'Venue and rentals': [
+    'What is the capacity, and is there step-free access?',
+    'What are the curfew and noise rules?',
+    'What is the cancellation policy?',
+  ],
+  'Music and sound': [
+    'Is sound equipment included?',
+    'How long is each set, and what happens in breaks?',
+    'What power do you need from the venue?',
+  ],
+  'Decor and flowers': [
+    'Which flowers are in season on our date?',
+    'Are setup and teardown included?',
+    'Can pieces be reused between ceremony and dinner?',
+  ],
+  'Food and cake': [
+    'What is the per-head price at our guest count?',
+    'Can you handle dietary needs?',
+    'When must the order be final?',
+  ],
+  Entertainment: [
+    'How long is the performance?',
+    'What space and power do you need?',
+    'Which age range does it suit best?',
+  ],
+  Venue: [
+    'What is the capacity and the minimum spend?',
+    'Is outside decor allowed?',
+    'What is the cancellation policy?',
+  ],
   Decor: ['What is included in the package?', 'Are setup and cleanup included?'],
   'Return gifts': ['What is the lead time for our quantity?', 'Can the gifts be personalized?'],
-  'Promotion and reach': ['What does the print run cost at our quantity?', 'How fast can you turn around a design change?'],
-  Food: ['Can you serve vegetarian and allergy-safe options?', 'What do you need for power and water?', 'How many people can you serve per hour?'],
-  'Sound and stage': ['Does the price include setup, an operator, and teardown?', 'What permits or power do you need from us?'],
+  'Promotion and reach': [
+    'What does the print run cost at our quantity?',
+    'How fast can you turn around a design change?',
+  ],
+  Food: [
+    'Can you serve vegetarian and allergy-safe options?',
+    'What do you need for power and water?',
+    'How many people can you serve per hour?',
+  ],
+  'Sound and stage': [
+    'Does the price include setup, an operator, and teardown?',
+    'What permits or power do you need from us?',
+  ],
 }
 
-const range = (amount: number) => ({ estLow: Math.round(amount * 0.85), estHigh: Math.round(amount * 1.15) })
+const range = (amount: number) => ({
+  estLow: Math.round(amount * 0.85),
+  estHigh: Math.round(amount * 1.15),
+})
 
 /** One checklist item per vendor-backed budget line. Estimates are planning ranges, not quotes. */
 export function buildVendors(input: PlanInput, lines: BudgetLine[]): VendorItem[] {

@@ -40,8 +40,9 @@ Open <http://localhost:3000>. The fake provider is deterministic and the memory 
 |---|---|
 | `pnpm dev` / `pnpm build` / `pnpm start` | Next.js 16 |
 | `pnpm typecheck` / `pnpm lint` | TypeScript strict, ESLint |
-| `pnpm test` / `pnpm test:coverage` | Unit, property, service, route and security tests (fakes only, no network) |
-| `pnpm e2e` | Playwright + axe against the real routes with keyless providers (run `pnpm build` first) |
+| `pnpm format` / `pnpm format:check` | Prettier (the check runs in CI) |
+| `pnpm test` / `pnpm test:coverage` | Unit, property, service, route, security and component tests (fakes only, no network) |
+| `pnpm e2e` | Playwright + axe (WCAG 2.2 AA and best practices, any impact) against the real routes with keyless providers (run `pnpm build` first) |
 | `pnpm check:secrets` | Fails if a secret value or a secret-looking `NEXT_PUBLIC_` name could reach the browser |
 | `pnpm smoke` | Creates plans against `BASE_URL` and prints p50/p95 latency against the budgets |
 
@@ -65,7 +66,8 @@ flowchart LR
 ```
 
 - `lib/domain/` is pure and shared by browser and server: templates, allocator, timeline, vendors, ideas, scenarios,
-  diff, actions.
+  diff, actions. Browser helpers sit beside it: `lib/api.ts` (typed client), `lib/plan-form.ts` (wizard rules),
+  `lib/event-theme.ts` (event names and colours), `lib/local-plans.ts` (plans on this device).
 - `lib/server/` (every file imports `server-only`): env, container, HTTP lifecycle, security, repositories, AI layer,
   services.
 - Two interfaces only, both swapped by env: `AiProvider` (`AI_PROVIDER=gemini|fake`) and `PlanRepository`

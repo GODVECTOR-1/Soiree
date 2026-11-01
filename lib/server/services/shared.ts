@@ -16,7 +16,13 @@ export async function reload(c: Container, slug: string): Promise<PlanRecord> {
 
 /** The public shape: no token hash, no internal revision, never a draft. */
 export const toPublicPlan = (r: PlanRecord, readOnly = false): Plan =>
-  Plan.parse({ slug: r.slug, input: r.input, current: PlanVersion.parse(r.current), history: r.history, readOnly })
+  Plan.parse({
+    slug: r.slug,
+    input: r.input,
+    current: PlanVersion.parse(r.current),
+    history: r.history,
+    readOnly,
+  })
 
 /** The weak ETag for a plan's current state. */
 export const etagOf = (r: PlanRecord) => `W/"${r.current.version}-${r.current.rev}"`

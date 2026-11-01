@@ -1,4 +1,15 @@
-import type { BudgetLine, EventType, InputPatch, PlanDiff, PlanInput, Phase, PlanVersion, Task, VendorItem, WhatIfResult } from '../schemas'
+import type {
+  BudgetLine,
+  EventType,
+  InputPatch,
+  PlanDiff,
+  PlanInput,
+  Phase,
+  PlanVersion,
+  Task,
+  VendorItem,
+  WhatIfResult,
+} from '../schemas'
 import { addDays } from '../format'
 import { allocate } from './allocate'
 import { buildDiff } from './diff'
@@ -50,23 +61,35 @@ function absorb(lines: BudgetLine[], diff: number, type: EventType, total: numbe
   // The buffer gives alongside flexible lines: keeping it whole while categories halve helps nobody.
   for (const tier of [['flexible', 'buffer'], ['semi'], ['fixed']]) {
     const donors = open.filter((l) => tier.includes(flexOf(type, l)))
-    const room = donors.map((l) => Math.max(0, l.amount - Math.round((total * (templateFor(type, l.category)?.share ?? 0)) / 200)))
+    const room = donors.map((l) =>
+      Math.max(
+        0,
+        l.amount - Math.round((total * (templateFor(type, l.category)?.share ?? 0)) / 200),
+      ),
+    )
     const take = Math.min(need, sum(room))
-    shift(donors, distribute(take, room).map((x) => -x))
+    shift(
+      donors,
+      distribute(take, room).map((x) => -x),
+    )
     need -= take
   }
   const floorsBroken = need > 0
   if (floorsBroken) {
     // Floors cannot hold: cut proportionally, reaching priority lines only if nothing else is left.
     const pool = sum(amountsOf(open)) >= need ? open : out
-    shift(pool, distribute(need, amountsOf(pool)).map((x) => -x))
+    shift(
+      pool,
+      distribute(need, amountsOf(pool)).map((x) => -x),
+    )
   }
   return { lines: out, floorsBroken }
 }
 
 /** Templated narrative from the numbers; the AI may rewrite it, using only these facts. */
 export function templateNarrative(diff: PlanDiff, floorsBroken: boolean) {
-  if (floorsBroken) return 'This change is bigger than the flexible lines can absorb, so every non-priority line takes a share of the cut.'
+  if (floorsBroken)
+    return 'This change is bigger than the flexible lines can absorb, so every non-priority line takes a share of the cut.'
   const kept = diff.rows.filter((r) => r.protected).map((r) => r.category)
   return kept.length
     ? `Still protected: ${kept.join(', ')}. The flexible lines make room first.`
@@ -76,8 +99,13 @@ export function templateNarrative(diff: PlanDiff, floorsBroken: boolean) {
 function finish(current: PlanVersion, p: Parts): ScenarioResult {
   const lines = p.lines.map((l) => ({ ...l, sharePct: pct(l.amount, p.total) }))
   const draft = withEstimates({
-    ...current, version: current.version + 1, scenario: p.label, budgetTotal: p.total, lines,
-    phases: p.phases ?? current.phases, vendors: p.vendors ?? current.vendors,
+    ...current,
+    version: current.version + 1,
+    scenario: p.label,
+    budgetTotal: p.total,
+    lines,
+    phases: p.phases ?? current.phases,
+    vendors: p.vendors ?? current.vendors,
   })
   const diff = buildDiff(current, draft)
   draft.narrative = p.narrative ?? templateNarrative(diff, p.floorsBroken ?? false)
@@ -99,7 +127,13 @@ function budgetChange(input: PlanInput, current: PlanVersion, value: number): Sc
     return finish(current, { lines, total, label, patch: { totalBudget: total } })
   }
   const r = absorb(lines, extra, input.eventType, total)
-  return finish(current, { lines: r.lines, total, label, patch: { totalBudget: total }, floorsBroken: r.floorsBroken })
+  return finish(current, {
+    lines: r.lines,
+    total,
+    label,
+    patch: { totalBudget: total },
+    floorsBroken: r.floorsBroken,
+  })
 }
 
 function guestChange(input: PlanInput, current: PlanVersion, wanted: number): ScenarioResult {
@@ -111,7 +145,10 @@ function guestChange(input: PlanInput, current: PlanVersion, wanted: number): Sc
     return t?.perGuest ? ratio : t?.flex === 'semi' ? 1 + (ratio - 1) / 2 : null
   }
   // Per-guest lines scale fully, semi lines by half; the rest absorb the difference. Total is unchanged.
-  const lines = current.lines.map((l) => ({ ...l, amount: Math.round(l.amount * (driven(l) ?? 1)) }))
+  const lines = current.lines.map((l) => ({
+    ...l,
+    amount: Math.round(l.amount * (driven(l) ?? 1)),
+  }))
   const rest = lines.filter((l) => driven(l) === null)
   const drivenSum = sum(amountsOf(lines.filter((l) => driven(l) !== null)))
   const r = absorb(rest, total - drivenSum - sum(amountsOf(rest)), input.eventType, total)
@@ -124,19 +161,38 @@ function guestChange(input: PlanInput, current: PlanVersion, wanted: number): Sc
   })
 }
 
-const URGENT_VENUE = ['Ask the old venue for any refund in writing', 'Shortlist three replacement venues for your date', 'Tell booked vendors the venue is changing']
+const URGENT_VENUE = [
+  'Ask the old venue for any refund in writing',
+  'Shortlist three replacement venues for your date',
+  'Tell booked vendors the venue is changing',
+]
 
 function venueCancelled(input: PlanInput, current: PlanVersion, today: string): ScenarioResult {
   const next = current.version + 1
   const lines = copy(current.lines)
   const venue = lines.find((l) => templateFor(input.eventType, l.category)?.venue)
-  if (!venue) return finish(current, { lines, total: current.budgetTotal, label: 'Venue cancelled', patch: {} })
+  if (!venue)
+    return finish(current, {
+      lines,
+      total: current.budgetTotal,
+      label: 'Venue cancelled',
+      patch: {},
+    })
   // A short-notice premium of 15% on the venue line, absorbed by the other lines like a cut.
   const premium = Math.round(venue.amount * 0.15)
   venue.amount += premium
-  const r = absorb(lines.filter((l) => l !== venue), -premium, input.eventType, current.budgetTotal)
+  const r = absorb(
+    lines.filter((l) => l !== venue),
+    -premium,
+    input.eventType,
+    current.budgetTotal,
+  )
   const urgent: Task[] = URGENT_VENUE.map((title, n) => ({
-    id: `venue-emergency-${n}-v${next}`, title, dueLabel: 'ASAP', done: false, tags: n === 1 ? [venue.category] : [],
+    id: `venue-emergency-${n}-v${next}`,
+    title,
+    dueLabel: 'ASAP',
+    done: false,
+    tags: n === 1 ? [venue.category] : [],
   }))
   return finish(current, {
     lines: lines.map((l) => r.lines.find((x) => x.id === l.id) ?? l),
@@ -148,20 +204,36 @@ function venueCancelled(input: PlanInput, current: PlanVersion, today: string): 
     // A new id: the replacement venue is a new booking, so Apply cannot restore the old "booked" status.
     vendors: current.vendors.map((v) =>
       v.category === venue.category && !v.custom
-        ? { ...v, id: `vendor-${venue.id}-r${next}`, status: 'not_started' as const, notes: undefined, name: undefined, contact: undefined, quote: undefined }
+        ? {
+            ...v,
+            id: `vendor-${venue.id}-r${next}`,
+            status: 'not_started' as const,
+            notes: undefined,
+            name: undefined,
+            contact: undefined,
+            quote: undefined,
+          }
         : v,
     ),
   })
 }
 
-function dateChange(input: PlanInput, current: PlanVersion, days: number, today: string): ScenarioResult {
+function dateChange(
+  input: PlanInput,
+  current: PlanVersion,
+  days: number,
+  today: string,
+): ScenarioResult {
   const next = current.version + 1
   const date = addDays(input.date, days)
   const reconfirm: Task[] = current.vendors
     .filter((v) => v.status === 'booked')
     .map((v) => ({
-      id: `reconfirm-${v.id}-v${next}`, title: `Reconfirm ${v.category.toLowerCase()} availability for the new date`,
-      dueLabel: 'ASAP', done: false, tags: [v.category],
+      id: `reconfirm-${v.id}-v${next}`,
+      title: `Reconfirm ${v.category.toLowerCase()} availability for the new date`,
+      dueLabel: 'ASAP',
+      done: false,
+      tags: [v.category],
     }))
   return finish(current, {
     lines: copy(current.lines),

@@ -151,7 +151,11 @@ void main(){
 function oklch(hex: string): [number, number, number] {
   const n = parseInt(hex.slice(1, 7), 16)
   const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-  const [r, g, b] = [lin(((n >> 16) & 255) / 255), lin(((n >> 8) & 255) / 255), lin((n & 255) / 255)]
+  const [r, g, b] = [
+    lin(((n >> 16) & 255) / 255),
+    lin(((n >> 8) & 255) / 255),
+    lin((n & 255) / 255),
+  ]
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
   const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
@@ -174,9 +178,14 @@ function perimAt(px: number, py: number, w: number, h: number, r: number) {
   const d = [h / 2 - y, w / 2 - x, h / 2 + y, w / 2 + x] // top, right, bottom, left
   const side = d.indexOf(Math.min(...d))
   const s =
-    side === 0 ? (cx >= 0 ? cx : P + cx)
-      : side === 1 ? ax + qa + (ay - cy)
-        : side === 2 ? ax + 2 * qa + 2 * ay + (ax - cx)
+    side === 0
+      ? cx >= 0
+        ? cx
+        : P + cx
+      : side === 1
+        ? ax + qa + (ay - cy)
+        : side === 2
+          ? ax + 2 * qa + 2 * ay + (ax - cx)
           : 3 * ax + 3 * qa + 2 * ay + (cy + ay)
   return s / P
 }
@@ -192,7 +201,13 @@ export function FrameBorder({ colors }: { colors: [string, string] }) {
 
   useEffect(() => {
     const canvas = canvasRef.current
-    const gl = canvas?.getContext('webgl', { alpha: true, premultipliedAlpha: true, antialias: false, depth: false, stencil: false })
+    const gl = canvas?.getContext('webgl', {
+      alpha: true,
+      premultipliedAlpha: true,
+      antialias: false,
+      depth: false,
+      stencil: false,
+    })
     if (!canvas || !gl) return
 
     const compile = (type: number, src: string) => {
@@ -219,9 +234,20 @@ export function FrameBorder({ colors }: { colors: [string, string] }) {
 
     const loc = (name: string) => gl.getUniformLocation(prog, name)
     const U = {
-      res: loc('uRes'), dpr: loc('uDpr'), time: loc('uTime'), flow: loc('uFlow'), lineP: loc('uLineP'), glowP: loc('uGlowP'),
-      radius: loc('uRadius'), line: loc('uLine'), inset: loc('uInset'), glowW: loc('uGlowW'),
-      lchA: loc('uLchA'), lchB: loc('uLchB'), dHue: loc('uDHue'), pulse: loc('uPulse'),
+      res: loc('uRes'),
+      dpr: loc('uDpr'),
+      time: loc('uTime'),
+      flow: loc('uFlow'),
+      lineP: loc('uLineP'),
+      glowP: loc('uGlowP'),
+      radius: loc('uRadius'),
+      line: loc('uLine'),
+      inset: loc('uInset'),
+      glowW: loc('uGlowW'),
+      lchA: loc('uLchA'),
+      lchB: loc('uLchB'),
+      dHue: loc('uDHue'),
+      pulse: loc('uPulse'),
     }
     gl.uniform1f(loc('uGlow'), GLOW)
     gl.uniform1f(loc('uNoise'), NOISE)
@@ -261,7 +287,9 @@ export function FrameBorder({ colors }: { colors: [string, string] }) {
       if (dh > Math.PI) dh -= 2 * Math.PI
       if (dh < -Math.PI) dh += 2 * Math.PI
       pulseData.fill(0)
-      pulses.forEach((p, i) => pulseData.set([p.u, Math.min(1, p.age * PULSE_SPEED / 1.4), 1], i * 3))
+      pulses.forEach((p, i) =>
+        pulseData.set([p.u, Math.min(1, (p.age * PULSE_SPEED) / 1.4), 1], i * 3),
+      )
       gl.uniform2f(U.res, canvas.width, canvas.height)
       gl.uniform1f(U.dpr, dpr)
       gl.uniform1f(U.time, time)
@@ -302,7 +330,10 @@ export function FrameBorder({ colors }: { colors: [string, string] }) {
       near = Math.min(e.clientX, e.clientY, w - e.clientX, h - e.clientY) < GLOW_WIDTH
     }
     const onDown = (e: PointerEvent) => {
-      pulses.push({ u: perimAt(e.clientX, e.clientY, canvas.clientWidth, canvas.clientHeight, RADIUS), age: 0 })
+      pulses.push({
+        u: perimAt(e.clientX, e.clientY, canvas.clientWidth, canvas.clientHeight, RADIUS),
+        age: 0,
+      })
       if (pulses.length > MAX_PULSES) pulses.shift() // clicks stack, oldest drops
     }
 

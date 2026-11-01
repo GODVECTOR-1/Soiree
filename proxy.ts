@@ -32,7 +32,8 @@ export function proxy(request: NextRequest) {
   res.headers.set('referrer-policy', 'strict-origin-when-cross-origin')
   res.headers.set('permissions-policy', 'camera=(), microphone=(), geolocation=()')
   res.headers.set('x-frame-options', 'DENY')
-  if (!dev) res.headers.set('strict-transport-security', 'max-age=63072000; includeSubDomains; preload')
+  if (!dev)
+    res.headers.set('strict-transport-security', 'max-age=63072000; includeSubDomains; preload')
   return res
 }
 

@@ -1,9 +1,20 @@
 import type { BudgetLine, PlanInput } from '../schemas'
-import { budgetTemplates, distribute, pct, planningUnit, slugId, sum, type LineTemplate } from './templates'
+import {
+  budgetTemplates,
+  distribute,
+  pct,
+  planningUnit,
+  slugId,
+  sum,
+  type LineTemplate,
+} from './templates'
 
 const BOOSTS = [4, 3, 2]
 
-type AllocInput = Pick<PlanInput, 'eventType' | 'priorities' | 'totalBudget' | 'currency' | 'cityTier'>
+type AllocInput = Pick<
+  PlanInput,
+  'eventType' | 'priorities' | 'totalBudget' | 'currency' | 'cityTier'
+>
 export type LineNote = { rationale?: string; tradeoffNote?: string }
 
 function rationale(t: LineTemplate, rank: number) {
@@ -11,7 +22,9 @@ function rationale(t: LineTemplate, rank: number) {
   if (t.flex === 'buffer') return 'Room for the unexpected. Keep it until the final week.'
   if (t.perGuest) return 'Scales with your guest list.'
   if (t.flex === 'fixed') return 'A fixed cost. Plan for it early.'
-  return t.flex === 'semi' ? 'Hard to shrink once booked.' : 'Flexible. Trimmed first if the budget tightens.'
+  return t.flex === 'semi'
+    ? 'Hard to shrink once booked.'
+    : 'Flexible. Trimmed first if the budget tightens.'
 }
 
 /** Percentage shares per template line: template, city-tier shift, then rank boosts funded above floors. */
@@ -26,19 +39,28 @@ export function baselineShares(input: AllocInput): number[] {
   const shift = (input.cityTier - 1) * 2
   if (shift && venueIdx >= 0 && priorityIdx.length && rank[venueIdx] === -1) {
     shares[venueIdx] = (shares[venueIdx] ?? 0) - shift
-    distribute(shift, priorityIdx.map(() => 1)).forEach((pts, k) => {
+    distribute(
+      shift,
+      priorityIdx.map(() => 1),
+    ).forEach((pts, k) => {
       const i = priorityIdx[k] ?? 0
       shares[i] = (shares[i] ?? 0) + pts
     })
   }
 
   // Rank boosts, funded from non-priority flexible and semi lines without breaking their floors.
-  const donors = tpl.map((t, i) => (rank[i] === -1 && (t.flex === 'flexible' || t.flex === 'semi') ? i : -1)).filter((i) => i >= 0)
+  const donors = tpl
+    .map((t, i) => (rank[i] === -1 && (t.flex === 'flexible' || t.flex === 'semi') ? i : -1))
+    .filter((i) => i >= 0)
   const room = donors.map((i) => Math.max(0, (shares[i] ?? 0) - (tpl[i]?.share ?? 0) / 2))
   const wanted = sum(priorityIdx.map((i) => BOOSTS[rank[i] ?? 0] ?? 0))
   const scale = wanted > 0 ? Math.min(1, sum(room) / wanted) : 0
   priorityIdx.forEach((i) => (shares[i] = (shares[i] ?? 0) + (BOOSTS[rank[i] ?? 0] ?? 0) * scale))
-  donors.forEach((i, k) => (shares[i] = (shares[i] ?? 0) - (sum(room) ? ((room[k] ?? 0) / sum(room)) * wanted * scale : 0)))
+  donors.forEach(
+    (i, k) =>
+      (shares[i] =
+        (shares[i] ?? 0) - (sum(room) ? ((room[k] ?? 0) / sum(room)) * wanted * scale : 0)),
+  )
   return shares
 }
 
@@ -46,11 +68,18 @@ export function baselineShares(input: AllocInput): number[] {
  * Turn shares into exact integer lines: rounded to a planning unit by largest remainder, odd remainder to the
  * buffer line, so lines always sum exactly to the total. `notes` override the templated rationale per line.
  */
-export function toLines(input: Omit<AllocInput, 'cityTier'>, shares: number[], notes: LineNote[] = []): BudgetLine[] {
+export function toLines(
+  input: Omit<AllocInput, 'cityTier'>,
+  shares: number[],
+  notes: LineNote[] = [],
+): BudgetLine[] {
   const tpl = budgetTemplates[input.eventType]
   const unit = planningUnit(input.totalBudget, input.currency)
   const amounts = distribute(Math.floor(input.totalBudget / unit), shares).map((x) => x * unit)
-  const bufferIdx = Math.max(0, tpl.findIndex((t) => t.flex === 'buffer'))
+  const bufferIdx = Math.max(
+    0,
+    tpl.findIndex((t) => t.flex === 'buffer'),
+  )
   amounts[bufferIdx] = (amounts[bufferIdx] ?? 0) + (input.totalBudget % unit)
   return tpl.map((t, i) => {
     const rank = input.priorities.indexOf(t.label)
@@ -62,7 +91,9 @@ export function toLines(input: Omit<AllocInput, 'cityTier'>, shares: number[], n
       sharePct: pct(amount, input.totalBudget),
       isPriority: rank >= 0,
       rationale: notes[i]?.rationale ?? rationale(t, rank),
-      tradeoffNote: notes[i]?.tradeoffNote ?? (rank < 0 && t.flex === 'flexible' ? 'Gives first when priorities need room.' : undefined),
+      tradeoffNote:
+        notes[i]?.tradeoffNote ??
+        (rank < 0 && t.flex === 'flexible' ? 'Gives first when priorities need room.' : undefined),
     }
   })
 }

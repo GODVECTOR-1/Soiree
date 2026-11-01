@@ -10,7 +10,15 @@ const STEP_MS = 2400
  * sits where the result will appear. The title's words rise in, dots pulse, a bar sweeps, and the step line rotates.
  * Screen readers hear the title once (the rotating steps are visual only, so they don't chatter).
  */
-export function LoadingScreen({ title, steps, variant = 'page' }: { title: string; steps: string[]; variant?: 'page' | 'inline' }) {
+export function LoadingScreen({
+  title,
+  steps,
+  variant = 'page',
+}: {
+  title: string
+  steps: string[]
+  variant?: 'page' | 'inline'
+}) {
   const [i, setI] = useState(0)
   useEffect(() => {
     if (steps.length < 2) return
@@ -20,7 +28,9 @@ export function LoadingScreen({ title, steps, variant = 'page' }: { title: strin
 
   return (
     <div className={`loading loading-${variant}`}>
-      <SkyGradient style={{ position: 'absolute', inset: 0, height: '100%', aspectRatio: 'auto' }} />
+      <SkyGradient
+        style={{ position: 'absolute', inset: 0, height: '100%', aspectRatio: 'auto' }}
+      />
       <div className="loading-card">
         {variant === 'page' && <span className="loading-brand">Soirée</span>}
         <p className="loading-title" role="status">

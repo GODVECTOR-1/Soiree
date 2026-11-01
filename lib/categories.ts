@@ -13,13 +13,7 @@ export const categories: Record<PlanInput['eventType'], readonly string[]> = {
     'Music and sound',
     'Decor and flowers',
   ],
-  birthday: [
-    'Food and cake',
-    'Entertainment',
-    'Venue',
-    'Decor',
-    'Return gifts',
-  ],
+  birthday: ['Food and cake', 'Entertainment', 'Venue', 'Decor', 'Return gifts'],
   community: [
     'Promotion and reach',
     'Food',
@@ -41,4 +35,3 @@ export function allLabels(eventType: PlanInput['eventType']): readonly string[] 
   const cats = categories[eventType]
   return eventType === 'community' ? cats : [...cats, BUFFER_LABEL]
 }
-

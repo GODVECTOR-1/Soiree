@@ -7,7 +7,14 @@ export const BODY_LIMIT_BYTES = 16 * 1024
 export const PLAN_TTL_DAYS = 90
 
 /** Per-IP requests per hour, keyed by endpoint group. */
-export const IP_LIMITS = { create: 8, whatif: 20, regenerate: 10, ask: 20, read: 300, edit: 600 } as const
+export const IP_LIMITS = {
+  create: 8,
+  whatif: 20,
+  regenerate: 10,
+  ask: 20,
+  read: 300,
+  edit: 600,
+} as const
 export type IpLimitKey = keyof typeof IP_LIMITS
 export const IP_WINDOW_SEC = 3600
 

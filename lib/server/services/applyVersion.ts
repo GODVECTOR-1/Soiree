@@ -7,7 +7,8 @@ import type { PlanRecord } from '../db/planRepository'
 import { AppError, errors } from '../http/errors'
 import { reload, toPublicPlan } from './shared'
 
-const draftGone = () => new AppError('DRAFT_NOT_FOUND', 404, 'That draft is no longer available. Run the scenario again.')
+const draftGone = () =>
+  new AppError('DRAFT_NOT_FOUND', 404, 'That draft is no longer available. Run the scenario again.')
 
 /**
  * Promote a draft. Progress made on the current version while the draft was open is merged in by id, then
@@ -20,7 +21,11 @@ export async function applyVersion(c: Container, plan: PlanRecord, version: numb
     const draft = await c.repo.getDraft(p.id, version)
     if (!draft) throw draftGone()
     const merged = mergeProgress(p.current, draft.version)
-    const outcome = await c.repo.applyVersion(p.id, version, p.current.rev, { phases: merged.phases, vendors: merged.vendors, ideas: merged.ideas })
+    const outcome = await c.repo.applyVersion(p.id, version, p.current.rev, {
+      phases: merged.phases,
+      vendors: merged.vendors,
+      ideas: merged.ideas,
+    })
     if (outcome === 'no_draft') throw draftGone()
     p = await reload(c, p.slug)
     if (outcome !== 'stale') return toPublicPlan(p)

@@ -21,11 +21,20 @@ export type ViewProps = {
   onAction: (action: PlanAction, message?: string) => Promise<void>
 }
 
-
 const priorityNames = { high: 'High', medium: 'Medium', low: 'Low' } as const
 
 /** A checkable task with its due label and a priority label decided from the plan's context. */
-export function TaskRow({ task, input, canEdit, onToggle }: { task: Task; input: PlanInput; canEdit: boolean; onToggle: () => void }) {
+export function TaskRow({
+  task,
+  input,
+  canEdit,
+  onToggle,
+}: {
+  task: Task
+  input: PlanInput
+  canEdit: boolean
+  onToggle: () => void
+}) {
   const p = taskPriority(task, input)
   return (
     <label className="task">
@@ -44,14 +53,29 @@ export function TaskRow({ task, input, canEdit, onToggle }: { task: Task; input:
 }
 
 /** Zero-dependency port of 21st.dev CircleProgress. */
-export function ProgressRing({ value, total, label }: { value: number; total: number; label: string }) {
+export function ProgressRing({
+  value,
+  total,
+  label,
+}: {
+  value: number
+  total: number
+  label: string
+}) {
   const r = 26
   const c = 2 * Math.PI * r
   return (
     <div className="ring-wrap" role="img" aria-label={label}>
       <svg className="progress-ring" width="64" height="64" viewBox="0 0 64 64" aria-hidden>
         <circle className="track" cx="32" cy="32" r={r} />
-        <circle className="value" cx="32" cy="32" r={r} strokeDasharray={c} strokeDashoffset={c * (1 - (total ? value / total : 0))} />
+        <circle
+          className="value"
+          cx="32"
+          cy="32"
+          r={r}
+          strokeDasharray={c}
+          strokeDashoffset={c * (1 - (total ? value / total : 0))}
+        />
       </svg>
       <b aria-hidden>
         {value}/{total}
@@ -62,7 +86,8 @@ export function ProgressRing({ value, total, label }: { value: number; total: nu
 
 export function PlanningCalendar({ input, today }: { input: PlanInput; today: string }) {
   // Show a window that starts a little before today, so the strip is useful on any day of planning.
-  const start = input.planningStart > addDays(today, -14) ? input.planningStart : addDays(today, -14)
+  const start =
+    input.planningStart > addDays(today, -14) ? input.planningStart : addDays(today, -14)
   const count = Math.min(60, Math.max(1, daysBetween(start, input.date) + 1))
   const days = Array.from({ length: count }, (_, i) => addDays(start, i))
   return (
@@ -75,15 +100,19 @@ export function PlanningCalendar({ input, today }: { input: PlanInput; today: st
         <CalendarDays aria-hidden />
       </div>
       <p className="calendar-caption">
-        Planning since {shortDate(input.planningStart)} · Event on {shortDate(input.date)} · Passed days are crossed out.
+        Planning since {shortDate(input.planningStart)} · Event on {shortDate(input.date)} · Passed
+        days are crossed out.
       </p>
-      <div className="date-strip" tabIndex={0} aria-label="Planning days">
+      {/* Scrollable, so it takes focus for keyboard scrolling and is named as a region. */}
+      <div className="date-strip" tabIndex={0} role="region" aria-label="Planning days">
         {days.map((iso) => {
           const p = dateParts(iso)
           return (
             <div
               key={iso}
-              className={iso < today ? 'date-cell passed' : iso === today ? 'date-cell today' : 'date-cell'}
+              className={
+                iso < today ? 'date-cell passed' : iso === today ? 'date-cell today' : 'date-cell'
+              }
               aria-current={iso === today ? 'date' : undefined}
               title={iso < today ? `${shortDate(iso)}, passed` : shortDate(iso)}
             >
@@ -99,7 +128,15 @@ export function PlanningCalendar({ input, today }: { input: PlanInput; today: st
 }
 
 /** Section heading shared by the detail views. */
-export function Heading({ eyebrow, title, children }: { eyebrow: string; title: string; children?: React.ReactNode }) {
+export function Heading({
+  eyebrow,
+  title,
+  children,
+}: {
+  eyebrow: string
+  title: string
+  children?: React.ReactNode
+}) {
   return (
     <>
       <span className="eyebrow">{eyebrow}</span>
@@ -114,7 +151,13 @@ export function Heading({ eyebrow, title, children }: { eyebrow: string; title: 
 export function BudgetView({ input, version, canEdit, onAction }: ViewProps) {
   const [drafts, setDrafts] = useState<Record<string, string> | null>(null)
   const check = drafts
-    ? totalCheck(version.lines.map((l) => ({ ...l, amount: Math.round(Number(drafts[l.id] ?? l.amount)) || 0 })), version.budgetTotal)
+    ? totalCheck(
+        version.lines.map((l) => ({
+          ...l,
+          amount: Math.round(Number(drafts[l.id] ?? l.amount)) || 0,
+        })),
+        version.budgetTotal,
+      )
     : totalCheck(version.lines, version.budgetTotal)
   const valid = drafts ? Object.values(drafts).every((x) => /^\d+$/.test(x)) && check.ok : false
 
@@ -147,7 +190,9 @@ export function BudgetView({ input, version, canEdit, onAction }: ViewProps) {
                   className="amount-input"
                   inputMode="numeric"
                   value={drafts[l.id] ?? ''}
-                  onChange={(e) => setDrafts({ ...drafts, [l.id]: e.target.value.replace(/[^\d]/g, '') })}
+                  onChange={(e) =>
+                    setDrafts({ ...drafts, [l.id]: e.target.value.replace(/[^\d]/g, '') })
+                  }
                 />
               </label>
             ) : (
@@ -161,8 +206,11 @@ export function BudgetView({ input, version, canEdit, onAction }: ViewProps) {
       </div>
       <div className="total-check" role="status">
         {check.ok ? <Check size={16} aria-hidden /> : <span aria-hidden>!</span>}
-        Allocated <b>{money(check.allocated, input.currency)}</b> of <b>{money(check.target, input.currency)}</b>
-        {!check.ok && <span> · {money(check.target - check.allocated, input.currency)} left to place</span>}
+        Allocated <b>{money(check.allocated, input.currency)}</b> of{' '}
+        <b>{money(check.target, input.currency)}</b>
+        {!check.ok && (
+          <span> · {money(check.target - check.allocated, input.currency)} left to place</span>
+        )}
       </div>
       {canEdit && (
         <div className="wizard-actions start">
@@ -176,7 +224,12 @@ export function BudgetView({ input, version, canEdit, onAction }: ViewProps) {
               </button>
             </>
           ) : (
-            <button className="outline-btn" onClick={() => setDrafts(Object.fromEntries(version.lines.map((l) => [l.id, String(l.amount)])))}>
+            <button
+              className="outline-btn"
+              onClick={() =>
+                setDrafts(Object.fromEntries(version.lines.map((l) => [l.id, String(l.amount)])))
+              }
+            >
               Adjust amounts
             </button>
           )}
@@ -185,8 +238,6 @@ export function BudgetView({ input, version, canEdit, onAction }: ViewProps) {
     </section>
   )
 }
-
-
 
 // ---------- Ideas ----------
 
@@ -203,7 +254,10 @@ export function IdeasView({ slug, token, version, canEdit, onAction }: ViewProps
     setError('')
     try {
       const fresh = await regenerateIdeas(slug, token, feedback.trim())
-      await onAction({ type: 'ideas', ideas: fresh }, 'New ideas are ready. Your saved ideas stayed.')
+      await onAction(
+        { type: 'ideas', ideas: fresh },
+        'New ideas are ready. Your saved ideas stayed.',
+      )
       setFeedback('')
     } catch (err) {
       setError(errorMessage(err))
@@ -213,7 +267,7 @@ export function IdeasView({ slug, token, version, canEdit, onAction }: ViewProps
   }
 
   return (
-    <section className="detail" style={{ maxWidth: 1000 }}>
+    <section className="detail detail-wide">
       <Heading eyebrow="Made for you" title="Personal touches that fit">
         Keep the ones that feel like you. Saved ideas move to the top.
       </Heading>
@@ -221,7 +275,12 @@ export function IdeasView({ slug, token, version, canEdit, onAction }: ViewProps
         <form className="feedback-row" onSubmit={regenerate}>
           <label>
             <span className="field-hint">What should new ideas lean toward? (optional)</span>
-            <input value={feedback} maxLength={300} onChange={(e) => setFeedback(e.target.value)} placeholder="More outdoor, less formal" />
+            <input
+              value={feedback}
+              maxLength={300}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="More outdoor, less formal"
+            />
           </label>
           <button className="outline-btn" type="submit" disabled={busy}>
             {busy ? 'Finding new ideas…' : 'Regenerate ideas'}
@@ -232,7 +291,11 @@ export function IdeasView({ slug, token, version, canEdit, onAction }: ViewProps
         <LoadingScreen
           variant="inline"
           title="Finding new ideas"
-          steps={['Reading your vibes and needs', 'Keeping the ideas you saved', 'Matching ideas to your priorities']}
+          steps={[
+            'Reading your vibes and needs',
+            'Keeping the ideas you saved',
+            'Matching ideas to your priorities',
+          ]}
         />
       )}
       {error && (
@@ -249,7 +312,12 @@ export function IdeasView({ slug, token, version, canEdit, onAction }: ViewProps
             <footer>
               {i.fitsPriority ? <span className="fits">★ Fits {i.fitsPriority}</span> : <span />}
               {canEdit && (
-                <button className="save-btn" aria-pressed={i.saved} aria-label={`${i.saved ? 'Unsave' : 'Save'} ${i.title}`} onClick={() => onAction({ type: 'idea', id: i.id })}>
+                <button
+                  className="save-btn"
+                  aria-pressed={i.saved}
+                  aria-label={`Save ${i.title}`}
+                  onClick={() => onAction({ type: 'idea', id: i.id })}
+                >
                   <Heart size={18} aria-hidden />
                 </button>
               )}

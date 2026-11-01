@@ -11,9 +11,19 @@ const DEMO = /^demo-(wedding|birthday|community)$/
 
 /** Demo plans are generated from the samples on read, dated from today so they never go stale. Never stored. */
 export function demoPlan(type: EventType, today: string): Plan {
-  const input = { ...samples[type], planningStart: today, date: addDays(today, DEMO_DAYS_OUT[type]) }
+  const input = {
+    ...samples[type],
+    planningStart: today,
+    date: addDays(today, DEMO_DAYS_OUT[type]),
+  }
   const current = previewVersion(input, today)
-  return { slug: `demo-${type}`, input, current, history: [{ version: 1, createdAt: today }], readOnly: true }
+  return {
+    slug: `demo-${type}`,
+    input,
+    current,
+    history: [{ version: 1, createdAt: today }],
+    readOnly: true,
+  }
 }
 
 /** A plan's current version and history, with its ETag. Expired or unknown slugs are 404. */

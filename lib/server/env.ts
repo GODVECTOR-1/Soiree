@@ -11,7 +11,10 @@ const Env = z
     GEMINI_MODEL: optional,
     SUPABASE_URL: optional,
     SUPABASE_SECRET_KEY: optional,
-    RATE_LIMIT_ENABLED: z.enum(['true', 'false']).default('true').transform((v) => v === 'true'),
+    RATE_LIMIT_ENABLED: z
+      .enum(['true', 'false'])
+      .default('true')
+      .transform((v) => v === 'true'),
     RATE_LIMIT_SALT: optional,
     CRON_SECRET: optional,
     NEXT_PUBLIC_APP_URL: optional,

@@ -127,7 +127,13 @@ export function MoodField({ intenseColor }: { intenseColor: string }) {
   useEffect(() => {
     const canvas = canvasRef.current
     const host = canvas?.parentElement
-    const gl = canvas?.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false, premultipliedAlpha: false })
+    const gl = canvas?.getContext('webgl', {
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+      premultipliedAlpha: false,
+    })
     if (!canvas || !host || !gl) return // no WebGL: the CSS background colour shows instead
 
     const compile = (type: number, src: string) => {
@@ -154,7 +160,14 @@ export function MoodField({ intenseColor }: { intenseColor: string }) {
     gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
 
     const loc = (name: string) => gl.getUniformLocation(prog, name)
-    const u = { res: loc('iResolution'), mouse: loc('iMouse'), time: loc('iTime'), intense: loc('uIntense'), reach: loc('uReach'), pointer: loc('uPointer') }
+    const u = {
+      res: loc('iResolution'),
+      mouse: loc('iMouse'),
+      time: loc('iTime'),
+      intense: loc('uIntense'),
+      reach: loc('uReach'),
+      pointer: loc('uPointer'),
+    }
     gl.uniform1f(loc('uEmotion'), 0)
     gl.uniform3fv(loc('uCalm'), rgb(CALM))
     gl.uniform3fv(loc('uBg'), rgb(BG))

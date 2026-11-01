@@ -87,7 +87,13 @@ const rgb = (hex: string): [number, number, number] => {
 }
 
 /** Animated ribbons that fill their positioned parent and swirl toward the cursor anywhere over that parent. */
-export function RibbonGlow({ colors, background = '#0B0A10' }: { colors: string[]; background?: string }) {
+export function RibbonGlow({
+  colors,
+  background = '#0B0A10',
+}: {
+  colors: string[]
+  background?: string
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const colorsRef = useRef({ colors, background })
   const redrawRef = useRef<() => void>(() => {})
@@ -95,7 +101,12 @@ export function RibbonGlow({ colors, background = '#0B0A10' }: { colors: string[
   useEffect(() => {
     const canvas = canvasRef.current
     const host = canvas?.parentElement
-    const gl = canvas?.getContext('webgl', { alpha: false, antialias: false, depth: false, stencil: false })
+    const gl = canvas?.getContext('webgl', {
+      alpha: false,
+      antialias: false,
+      depth: false,
+      stencil: false,
+    })
     if (!canvas || !host || !gl) return // no WebGL: the CSS background colour shows instead
 
     const compile = (type: number, src: string) => {
@@ -122,8 +133,16 @@ export function RibbonGlow({ colors, background = '#0B0A10' }: { colors: string[
 
     const loc = (name: string) => gl.getUniformLocation(prog, name)
     const U = {
-      res: loc('uRes'), mouse: loc('uMouse'), vel: loc('uVel'), time: loc('uTime'), presence: loc('uPresence'),
-      reach: loc('uReach'), bg: loc('uBg'), a: loc('uColorA'), b: loc('uColorB'), light: loc('uLight'),
+      res: loc('uRes'),
+      mouse: loc('uMouse'),
+      vel: loc('uVel'),
+      time: loc('uTime'),
+      presence: loc('uPresence'),
+      reach: loc('uReach'),
+      bg: loc('uBg'),
+      a: loc('uColorA'),
+      b: loc('uColorB'),
+      light: loc('uLight'),
     }
     gl.uniform1f(loc('uHover'), HOVER)
     gl.uniform1f(loc('uSize'), SIZE)

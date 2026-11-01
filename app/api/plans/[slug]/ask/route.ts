@@ -6,6 +6,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 60
 
 /** Grounded questions about the plan. */
-export const POST = withHandler({ name: 'plans.ask', limit: 'ask', auth: true, body: AskRequest }, ({ c, plan, body }) =>
-  askPlanner(c, plan, body),
+export const POST = withHandler(
+  { name: 'plans.ask', limit: 'ask', auth: true, body: AskRequest },
+  ({ c, plan, body }) => askPlanner(c, plan, body),
 )

@@ -9,16 +9,10 @@ import { PlanPicker } from '@/components/plan-picker'
 import { Ribbon } from '@/components/ribbon'
 import { allocate } from '@/lib/domain/allocate'
 import { dateParts } from '@/lib/format'
+import { eventColors } from '@/lib/event-theme'
 import { samples, type EventType } from '@/lib/schemas'
 
 const events: EventType[] = ['wedding', 'birthday', 'community']
-
-// Originkit Mood Field preset colour per event (the rest of each preset is identical).
-const moodColors: Record<EventType, string> = {
-  wedding: '#FF00B3',
-  birthday: '#EF4C04',
-  community: '#0b7f6b', // the community accent teal
-}
 
 const gallery: CoverflowSlide[] = [
   {
@@ -61,7 +55,7 @@ export default function Page() {
   const d = dateParts(sample.date)
 
   return (
-    <main className="landing" id="main" data-event={event}>
+    <div className="landing" data-event={event}>
       <header className="site-header">
         <Link className="brand" href="/">
           Soirée
@@ -77,87 +71,89 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="hero-band">
-        <MoodField intenseColor={moodColors[event]} />
-        <section className="hero">
-          <div className="hero-copy">
-            <span className="eyebrow">A gentler way to plan</span>
-            <h1>
-              Plan the celebration,
-              <br />
-              <em>not the spreadsheet.</em>
-            </h1>
-            <p>
-              One thoughtful plan for the day you&apos;re imagining. Budget, timeline, vendors, and
-              ideas, shaped around what matters to you.
-            </p>
-            <div className="hero-actions">
-              <Link className="primary-btn" href="/create">
-                Start planning <ArrowRight aria-hidden />
-              </Link>
-              <Link className="text-btn" href={`/plan/demo-${event}`}>
-                See a sample {event} plan <ChevronRight aria-hidden />
-              </Link>
-            </div>
-            <div className="event-picker" role="group" aria-label="Preview an event type">
-              <span>Planning a</span>
-              {events.map((item) => (
-                <button
-                  key={item}
-                  type="button"
-                  aria-pressed={event === item}
-                  onClick={() => setEvent(item)}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="sample-wrap">
-            <Coverflow slides={gallery} label="Celebration photos" />
-            <Link className="sample-card" href={`/plan/demo-${event}`}>
-              <div className="sample-top">
-                <span className="eyebrow">Sample plan</span>
-                <Heart size={18} aria-hidden />
-              </div>
-              <h2>{sample.title}</h2>
+      <main id="main">
+        <div className="hero-band">
+          <MoodField intenseColor={eventColors[event].mood} />
+          <section className="hero">
+            <div className="hero-copy">
+              <span className="eyebrow">A gentler way to plan</span>
+              <h1>
+                Plan the celebration,
+                <br />
+                <em>not the spreadsheet.</em>
+              </h1>
               <p>
-                {d.weekday}, {d.day} {d.month} {d.year} · {sample.city}
+                One thoughtful plan for the day you&apos;re imagining. Budget, timeline, vendors,
+                and ideas, shaped around what matters to you.
               </p>
-              <Ribbon lines={allocate(sample)} />
-              <div className="sample-bottom">
-                <span>
-                  <Check size={14} aria-hidden /> 100% allocated
-                </span>
-                <span>{sample.guestCount} guests</span>
+              <div className="hero-actions">
+                <Link className="primary-btn" href="/create">
+                  Start planning <ArrowRight aria-hidden />
+                </Link>
+                <Link className="text-btn" href={`/plan/demo-${event}`}>
+                  See a sample {event} plan <ChevronRight aria-hidden />
+                </Link>
               </div>
-            </Link>
-            <div className="card-note">
-              <span className="note-line" />
-              Built around your priorities
+              <div className="event-picker" role="group" aria-label="Preview an event type">
+                <span>Planning a</span>
+                {events.map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    aria-pressed={event === item}
+                    onClick={() => setEvent(item)}
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            <div className="sample-wrap">
+              <Coverflow slides={gallery} label="Celebration photos" />
+              <Link className="sample-card" href={`/plan/demo-${event}`}>
+                <div className="sample-top">
+                  <span className="eyebrow">Sample plan</span>
+                  <Heart size={18} aria-hidden />
+                </div>
+                <h2>{sample.title}</h2>
+                <p>
+                  {d.weekday}, {d.day} {d.month} {d.year} · {sample.city}
+                </p>
+                <Ribbon lines={allocate(sample)} />
+                <div className="sample-bottom">
+                  <span>
+                    <Check size={14} aria-hidden /> 100% allocated
+                  </span>
+                  <span>{sample.guestCount} guests</span>
+                </div>
+              </Link>
+              <div className="card-note">
+                <span className="note-line" />
+                Built around your priorities
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <section className="trust-row" id="how" aria-label="How it works">
+          <div>
+            <Coins aria-hidden />
+            <strong>Budget with intention</strong>
+            <span>See the trade-off behind every line.</span>
+          </div>
+          <div>
+            <CalendarDays aria-hidden />
+            <strong>A plan that lives</strong>
+            <span>Try a what-if before you change anything.</span>
+          </div>
+          <div>
+            <Users aria-hidden />
+            <strong>No account needed</strong>
+            <span>Your plan lives at a private link you can share.</span>
           </div>
         </section>
-      </div>
-
-      <section className="trust-row" id="how" aria-label="How it works">
-        <div>
-          <Coins aria-hidden />
-          <strong>Budget with intention</strong>
-          <span>See the trade-off behind every line.</span>
-        </div>
-        <div>
-          <CalendarDays aria-hidden />
-          <strong>A plan that lives</strong>
-          <span>Try a what-if before you change anything.</span>
-        </div>
-        <div>
-          <Users aria-hidden />
-          <strong>No account needed</strong>
-          <span>Your plan lives at a private link you can share.</span>
-        </div>
-      </section>
+      </main>
 
       <footer>
         <span>
@@ -165,6 +161,6 @@ export default function Page() {
         </span>
         <span>Made for weddings, birthdays, and neighborhoods.</span>
       </footer>
-    </main>
+    </div>
   )
 }

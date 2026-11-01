@@ -35,8 +35,8 @@ This file records the threat model and what is implemented, with the file that i
   with the edit link can edit; share the view link instead. "Remove" on `/plans` forgets the token on that device.
 - **Lifetime per-plan AI quotas.** Fixed limits keep a leaked link from draining the Gemini quota. A plan that reaches
   10 scenarios keeps every other feature.
-- **`zod@3` advisory ignored (GHSA-mrhx-c7xc-m3w5).** That copy is pulled only by the `shadcn` CLI, which is kept for
-  importing components and never runs in or ships with the app. The app uses `zod@^4.6.7`, which is patched.
+- **Dependency audit.** `pnpm audit --prod` reports no known vulnerabilities. Fixes for transitive packages are
+  pinned as `overrides` in `pnpm-workspace.yaml`, and CI fails on any high or critical production advisory.
 
 ## Logging
 

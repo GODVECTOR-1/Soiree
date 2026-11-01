@@ -6,7 +6,8 @@ import { withHandler } from '@/lib/server/http/handler'
 export const runtime = 'nodejs'
 export const maxDuration = 60
 
-const same = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b))
+const same = (a: string, b: string) =>
+  a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b))
 
 /** Retention cron (vercel.json): expired plans and stale rate-limit rows. Requires `Bearer CRON_SECRET`. */
 export const GET = withHandler({ name: 'cron.cleanup' }, async ({ c, req }) => {

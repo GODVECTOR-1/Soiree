@@ -28,8 +28,17 @@ function build(): Container {
     e.DB_PROVIDER === 'memory'
       ? (g.__soireeMemoryRepo ??= new MemoryRepository(now))
       : new SupabaseRepository(e.SUPABASE_URL ?? '', e.SUPABASE_SECRET_KEY ?? '')
-  const ai = e.AI_PROVIDER === 'fake' ? new FakeAi() : new GeminiProvider(e.GEMINI_API_KEY ?? '', e.GEMINI_MODEL ?? '')
-  return { repo, ai, now, salt: e.RATE_LIMIT_SALT ?? randomBytes(16).toString('hex'), rateLimit: e.RATE_LIMIT_ENABLED }
+  const ai =
+    e.AI_PROVIDER === 'fake'
+      ? new FakeAi()
+      : new GeminiProvider(e.GEMINI_API_KEY ?? '', e.GEMINI_MODEL ?? '')
+  return {
+    repo,
+    ai,
+    now,
+    salt: e.RATE_LIMIT_SALT ?? randomBytes(16).toString('hex'),
+    rateLimit: e.RATE_LIMIT_ENABLED,
+  }
 }
 
 /** The current container, built on first use. */

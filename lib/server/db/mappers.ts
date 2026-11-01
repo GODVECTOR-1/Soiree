@@ -24,18 +24,34 @@ const VersionRow = z.object({
 export function toVersion(row: unknown): StoredVersion {
   const r = VersionRow.parse(row)
   return {
-    version: r.version, rev: r.rev, createdAt: r.created_at, scenario: r.scenario, budgetTotal: r.budget_total,
-    lines: r.lines, phases: r.phases, vendors: r.vendors, ideas: r.ideas, narrative: r.narrative,
+    version: r.version,
+    rev: r.rev,
+    createdAt: r.created_at,
+    scenario: r.scenario,
+    budgetTotal: r.budget_total,
+    lines: r.lines,
+    phases: r.phases,
+    vendors: r.vendors,
+    ideas: r.ideas,
+    narrative: r.narrative,
   }
 }
 
-export const toInputPatch = (row: unknown) => VersionRow.pick({ input_patch: true }).parse(row).input_patch ?? null
+export const toInputPatch = (row: unknown) =>
+  VersionRow.pick({ input_patch: true }).parse(row).input_patch ?? null
 
 /** Map a domain version to insertable columns. */
 export function toRow(planId: string, v: PlanVersion) {
   return {
-    plan_id: planId, version: v.version, scenario: v.scenario ?? null, budget_total: v.budgetTotal,
-    lines: v.lines, phases: v.phases, vendors: v.vendors, ideas: v.ideas, narrative: v.narrative ?? null,
+    plan_id: planId,
+    version: v.version,
+    scenario: v.scenario ?? null,
+    budget_total: v.budgetTotal,
+    lines: v.lines,
+    phases: v.phases,
+    vendors: v.vendors,
+    ideas: v.ideas,
+    narrative: v.narrative ?? null,
   }
 }
 
@@ -45,11 +61,17 @@ const RecordJson = z.object({
   tokenHash: z.string(),
   input: PlanInput,
   current: z.unknown(),
-  history: z.array(z.object({ version: z.number(), createdAt: z.string(), scenario: nullable(z.string()) })),
+  history: z.array(
+    z.object({ version: z.number(), createdAt: z.string(), scenario: nullable(z.string()) }),
+  ),
 })
 
 /** Map the `get_plan` RPC result to a record. */
 export function toRecord(json: unknown): PlanRecord {
   const r = RecordJson.parse(json)
-  return { ...r, current: toVersion(r.current), history: r.history.map((h) => HistoryItem.parse(h)) }
+  return {
+    ...r,
+    current: toVersion(r.current),
+    history: r.history.map((h) => HistoryItem.parse(h)),
+  }
 }

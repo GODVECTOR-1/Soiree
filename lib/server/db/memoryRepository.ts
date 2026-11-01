@@ -1,10 +1,26 @@
 import 'server-only'
 import { randomUUID } from 'node:crypto'
 import type { InputPatch, PlanInput, PlanVersion } from '@/lib/schemas'
-import type { ApplyOutcome, Draft, MergedProgress, NewPlan, PlanRecord, PlanRepository, VersionPatch } from './planRepository'
+import type {
+  ApplyOutcome,
+  Draft,
+  MergedProgress,
+  NewPlan,
+  PlanRecord,
+  PlanRepository,
+  VersionPatch,
+} from './planRepository'
 
 type VersionRow = { v: PlanVersion; rev: number; applied: boolean; inputPatch: InputPatch | null }
-type PlanRow = { id: string; slug: string; tokenHash: string; input: PlanInput; current: number; expiresAt: Date; versions: Map<number, VersionRow> }
+type PlanRow = {
+  id: string
+  slug: string
+  tokenHash: string
+  input: PlanInput
+  current: number
+  expiresAt: Date
+  versions: Map<number, VersionRow>
+}
 
 const clone = <T>(x: T): T => structuredClone(x)
 
@@ -25,8 +41,18 @@ export class MemoryRepository implements PlanRepository {
 
   async create(p: NewPlan) {
     if (this.plans.has(p.slug)) throw new Error('duplicate slug')
-    const versions = new Map([[p.version.version, { v: clone(p.version), rev: 1, applied: true, inputPatch: null }]])
-    this.plans.set(p.slug, { id: randomUUID(), slug: p.slug, tokenHash: p.tokenHash, input: clone(p.input), current: p.version.version, expiresAt: p.expiresAt, versions })
+    const versions = new Map([
+      [p.version.version, { v: clone(p.version), rev: 1, applied: true, inputPatch: null }],
+    ])
+    this.plans.set(p.slug, {
+      id: randomUUID(),
+      slug: p.slug,
+      tokenHash: p.tokenHash,
+      input: clone(p.input),
+      current: p.version.version,
+      expiresAt: p.expiresAt,
+      versions,
+    })
   }
 
   async get(slug: string): Promise<PlanRecord | null> {
@@ -37,12 +63,21 @@ export class MemoryRepository implements PlanRepository {
       .filter((r) => r.applied)
       .sort((a, b) => a.v.version - b.v.version)
       .map((r) => ({ version: r.v.version, createdAt: r.v.createdAt, scenario: r.v.scenario }))
-    return clone({ id: p.id, slug: p.slug, tokenHash: p.tokenHash, input: p.input, current: { ...cur.v, rev: cur.rev }, history })
+    return clone({
+      id: p.id,
+      slug: p.slug,
+      tokenHash: p.tokenHash,
+      input: p.input,
+      current: { ...cur.v, rev: cur.rev },
+      history,
+    })
   }
 
   async getDraft(planId: string, version: number): Promise<Draft | null> {
     const row = this.byId(planId)?.versions.get(version)
-    return row && !row.applied ? clone({ version: { ...row.v, rev: row.rev }, inputPatch: row.inputPatch }) : null
+    return row && !row.applied
+      ? clone({ version: { ...row.v, rev: row.rev }, inputPatch: row.inputPatch })
+      : null
   }
 
   async replaceDraft(planId: string, draft: PlanVersion, inputPatch: InputPatch) {
@@ -50,7 +85,12 @@ export class MemoryRepository implements PlanRepository {
     if (!p) throw new Error('plan missing')
     await this.deleteDraft(planId)
     if (p.versions.has(draft.version)) throw new Error('duplicate version')
-    p.versions.set(draft.version, { v: clone(draft), rev: 1, applied: false, inputPatch: clone(inputPatch) })
+    p.versions.set(draft.version, {
+      v: clone(draft),
+      rev: 1,
+      applied: false,
+      inputPatch: clone(inputPatch),
+    })
   }
 
   async deleteDraft(planId: string) {
@@ -65,7 +105,12 @@ export class MemoryRepository implements PlanRepository {
     return ++row.rev
   }
 
-  async applyVersion(planId: string, version: number, expectedRev: number, merged: MergedProgress): Promise<ApplyOutcome> {
+  async applyVersion(
+    planId: string,
+    version: number,
+    expectedRev: number,
+    merged: MergedProgress,
+  ): Promise<ApplyOutcome> {
     const p = this.byId(planId)
     if (!p) return 'no_draft'
     if (p.current === version) return 'already_applied'
@@ -101,7 +146,10 @@ export class MemoryRepository implements PlanRepository {
     let rateRows = 0
     for (const k of this.rates.keys()) {
       const [key = '', at = '0'] = k.split('@')
-      const stale = Number(at) > 0 ? Number(at) < now.getTime() - 2 * 3600_000 : !live.has(key.split(':')[1] ?? '')
+      const stale =
+        Number(at) > 0
+          ? Number(at) < now.getTime() - 2 * 3600_000
+          : !live.has(key.split(':')[1] ?? '')
       if (!stale) continue
       this.rates.delete(k)
       rateRows++
