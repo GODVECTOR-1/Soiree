@@ -103,7 +103,7 @@ function needSeeds(input: PlanInput): TaskSeed[] {
 }
 
 /** Every task seed for a plan, with ids from the template index (never from the phase). */
-export function taskSeeds(input: PlanInput): TaskSeed[] {
+function taskSeeds(input: PlanInput): TaskSeed[] {
   const seeds: TaskSeed[] = taskTemplates[input.eventType].map((t, n) => ({
     ...t,
     id: `${input.eventType}-${n}`,
@@ -169,7 +169,7 @@ export function toPhases(tasks: Task[], date: string, today: string): Phase[] {
 /** All tasks of a plan, in phase order. */
 export const allTasks = (phases: Phase[]) => phases.flatMap((p) => p.tasks)
 
-export type TaskPriority = 'high' | 'medium' | 'low'
+type TaskPriority = 'high' | 'medium' | 'low'
 
 // Bookings that sell out months ahead; everything else waits on them.
 const BOOKS_EARLY = /\b(venue|permits?|photo|officiant)\b/i
@@ -190,7 +190,7 @@ export function taskPriority(t: Task, input: PlanInput): { level: TaskPriority; 
   return { level: 'medium', reason: '' }
 }
 
-export type TimelinePersonalization = {
+type TimelinePersonalization = {
   renames?: Record<string, string>
   additions?: { title: string; offsetDays: number; tags?: string[] }[]
 }

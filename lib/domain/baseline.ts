@@ -5,7 +5,7 @@ import { buildVendors } from './vendors'
 import { buildIdeas } from './ideas'
 
 /** The templated narrative for a first version. Labels already contain "and", so lists use commas. */
-export const baselineNarrative = (input: PlanInput) =>
+const baselineNarrative = (input: PlanInput) =>
   `Protected first: ${input.priorities.join(', ')}. Everything else stays flexible, with room held back for surprises.`
 
 /** A full, deterministic first version of the plan: the fallback for every AI section. */

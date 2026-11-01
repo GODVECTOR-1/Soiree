@@ -19,10 +19,7 @@ function subscribe(cb: () => void) {
  * Edit access for a plan: the token from `#edit=` (stored, then stripped from the URL so it does not linger in
  * history or get shared), else the one saved on this device. Pass `withToken = false` for view links.
  */
-export function usePlanAccess(
-  slug: string,
-  withToken = true,
-): { token: string | null; canEdit: boolean } {
+export function usePlanAccess(slug: string, withToken = true): string | null {
   useEffect(() => {
     if (!withToken) return
     const token = /(?:^#|&)edit=([A-Za-z0-9_-]{20,100})/.exec(window.location.hash)?.[1]
@@ -41,5 +38,5 @@ export function usePlanAccess(
     () => (withToken ? getToken(slug) : null),
     () => null,
   )
-  return { token, canEdit: !!token }
+  return token
 }

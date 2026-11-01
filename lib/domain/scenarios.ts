@@ -25,7 +25,7 @@ export type Scenario =
   | { kind: 'date_change'; days: number; today: string }
   | { kind: 'reprioritize'; priorities: string[] }
 
-export type ScenarioResult = WhatIfResult & { floorsBroken: boolean }
+type ScenarioResult = WhatIfResult & { floorsBroken: boolean }
 
 type Parts = {
   lines: BudgetLine[]

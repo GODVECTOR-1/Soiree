@@ -119,14 +119,14 @@ export const Plan = z.object({
 })
 export type Plan = z.infer<typeof Plan>
 
-export const DiffRow = z.object({
+const DiffRow = z.object({
   category: z.string(),
   before: z.number(),
   after: z.number(),
   deltaPct: z.number(),
   protected: z.boolean(),
 })
-export type DiffRow = z.infer<typeof DiffRow>
+type DiffRow = z.infer<typeof DiffRow>
 
 export const PlanDiff = z.object({
   fromVersion: z.number().int(),

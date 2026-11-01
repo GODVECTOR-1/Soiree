@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { fullscreenProgram, rgb, runLoop } from '@/components/webgl'
 
 // Original glowing frame border, written from the public demo and prop docs of React Bits Pro's "Frame Border"
 // (no React Bits code). Two colours blend in OKLCH and slowly travel around a crisp line with a soft, noisy inner
@@ -149,13 +150,8 @@ void main(){
 
 /** sRGB hex to OKLCH [L, C, h]. */
 function oklch(hex: string): [number, number, number] {
-  const n = parseInt(hex.slice(1, 7), 16)
   const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4)
-  const [r, g, b] = [
-    lin(((n >> 16) & 255) / 255),
-    lin(((n >> 8) & 255) / 255),
-    lin((n & 255) / 255),
-  ]
+  const [r, g, b] = rgb(hex).map(lin) as [number, number, number]
   const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b)
   const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b)
   const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b)
@@ -208,29 +204,8 @@ export function FrameBorder({ colors }: { colors: [string, string] }) {
       depth: false,
       stencil: false,
     })
-    if (!canvas || !gl) return
-
-    const compile = (type: number, src: string) => {
-      const sh = gl.createShader(type)
-      if (!sh) return null
-      gl.shaderSource(sh, src)
-      gl.compileShader(sh)
-      return sh
-    }
-    const vs = compile(gl.VERTEX_SHADER, VERT)
-    const fs = compile(gl.FRAGMENT_SHADER, FRAG)
-    const prog = gl.createProgram()
-    if (!vs || !fs || !prog) return
-    gl.attachShader(prog, vs)
-    gl.attachShader(prog, fs)
-    gl.linkProgram(prog)
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return
-    gl.useProgram(prog)
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
-    const aPos = gl.getAttribLocation(prog, 'aPos')
-    gl.enableVertexAttribArray(aPos)
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
+    const prog = gl && fullscreenProgram(gl, VERT, FRAG)
+    if (!canvas || !gl || !prog) return
 
     const loc = (name: string) => gl.getUniformLocation(prog, name)
     const U = {
@@ -309,19 +284,13 @@ export function FrameBorder({ colors }: { colors: [string, string] }) {
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
 
-    let raf = 0
-    let last = -1
-    const frame = (now: number) => {
-      raf = requestAnimationFrame(frame)
-      const dt = last < 0 ? 0 : Math.min(0.1, (now - last) / 1000)
-      last = now
+    const step = (dt: number) => {
       elapsed += dt
       time += dt
       boost += ((near ? HOVER_BOOST : 1) - boost) * (1 - Math.pow(0.92, dt * 60))
       flow += dt * 0.045 * FLOW_SPEED * boost
       for (const p of pulses) p.age += dt
       while (pulses.length && ((pulses[0]?.age ?? 0) * PULSE_SPEED) / 1.4 >= 1) pulses.shift()
-      draw()
     }
 
     const onMove = (e: PointerEvent) => {
@@ -337,18 +306,14 @@ export function FrameBorder({ colors }: { colors: [string, string] }) {
       if (pulses.length > MAX_PULSES) pulses.shift() // clicks stack, oldest drops
     }
 
-    const ro = new ResizeObserver(() => !raf && draw())
-    ro.observe(canvas)
-    if (reduced) draw()
-    else {
+    if (!reduced) {
       window.addEventListener('pointermove', onMove, { passive: true })
       window.addEventListener('pointerdown', onDown, { passive: true })
-      raf = requestAnimationFrame(frame)
     }
+    const stopLoop = runLoop(canvas, step, draw, reduced)
 
     return () => {
-      cancelAnimationFrame(raf)
-      ro.disconnect()
+      stopLoop()
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerdown', onDown)
     }

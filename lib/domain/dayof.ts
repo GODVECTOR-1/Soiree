@@ -1,7 +1,7 @@
 import type { EventType, PlanInput } from '../schemas'
 
 /** One line of the day-of run sheet. `time` is a 12-hour clock label, `at` minutes after midnight (for sorting). */
-export type RunSheetItem = { at: number; time: string; title: string }
+type RunSheetItem = { at: number; time: string; title: string }
 
 type Slot = [offsetMin: number, title: string]
 

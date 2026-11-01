@@ -2,7 +2,7 @@ import type { BudgetLine, PlanInput, PlanVersion, VendorItem, VendorPatch } from
 import { pct, templateFor } from './templates'
 
 /** Template questions per category, used when no personalized questions are available. */
-export const vendorQuestions: Record<string, string[]> = {
+const vendorQuestions: Record<string, string[]> = {
   Catering: [
     'What is included per plate, and what costs extra?',
     'When do you need the final guest count?',

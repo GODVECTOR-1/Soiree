@@ -22,7 +22,7 @@ const whole = (v: number | undefined, min: number, max: number, message: string)
 }
 
 /** Validate a scenario's numbers and turn it into a domain scenario. 400 for bad values, 422 for unsupported. */
-export function toScenario(input: PlanInput, s: Mapped, today: string): Scenario {
+function toScenario(input: PlanInput, s: Mapped, today: string): Scenario {
   switch (s.kind) {
     case 'budget_change':
       return {

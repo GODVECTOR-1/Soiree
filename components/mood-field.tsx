@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { fullscreenProgram, rgb, runLoop } from '@/components/webgl'
 
 // Adapted from Originkit's Mood Field with the user's presets. The shader is unchanged. Gone: Framer plumbing
 // (CSS-var colour probing, prop groups, the 1200x800 minimum size). Added: the cursor is tracked over the whole
@@ -113,11 +114,6 @@ const REACH = 260
 const SWIRL = Math.PI / 2
 const MAX_DPR = 1.5
 
-const rgb = (hex: string): [number, number, number] => {
-  const n = parseInt(hex.slice(1, 7), 16)
-  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]
-}
-
 /** Animated WebGL background that fills its positioned parent and swirls toward the cursor. */
 export function MoodField({ intenseColor }: { intenseColor: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -134,30 +130,8 @@ export function MoodField({ intenseColor }: { intenseColor: string }) {
       stencil: false,
       premultipliedAlpha: false,
     })
-    if (!canvas || !host || !gl) return // no WebGL: the CSS background colour shows instead
-
-    const compile = (type: number, src: string) => {
-      const sh = gl.createShader(type)
-      if (!sh) return null
-      gl.shaderSource(sh, src)
-      gl.compileShader(sh)
-      return sh
-    }
-    const vs = compile(gl.VERTEX_SHADER, VERT)
-    const fs = compile(gl.FRAGMENT_SHADER, FRAG)
-    const prog = gl.createProgram()
-    if (!vs || !fs || !prog) return
-    gl.attachShader(prog, vs)
-    gl.attachShader(prog, fs)
-    gl.linkProgram(prog)
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return
-    gl.useProgram(prog)
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
-    const aPos = gl.getAttribLocation(prog, 'aPos')
-    gl.enableVertexAttribArray(aPos)
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
+    const prog = gl && fullscreenProgram(gl, VERT, FRAG)
+    if (!canvas || !host || !gl || !prog) return // no WebGL: the CSS background colour shows instead
 
     const loc = (name: string) => gl.getUniformLocation(prog, name)
     const u = {
@@ -206,28 +180,12 @@ export function MoodField({ intenseColor }: { intenseColor: string }) {
     }
     redrawRef.current = draw
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let raf = 0
-    let last = -1
-    const frame = (now: number) => {
-      raf = requestAnimationFrame(frame)
-      const dt = last < 0 ? 0 : Math.min(0.1, Math.max(0, (now - last) / 1000))
-      last = now
+    const step = (dt: number) => {
       clock += dt
       const mk = 1 - Math.pow(1 - 0.18, dt * 60)
       mouse.x += (mouse.tx - mouse.x) * mk
       mouse.y += (mouse.ty - mouse.y) * mk
       mouse.presence += (mouse.want - mouse.presence) * mk
-      draw()
-    }
-    const start = () => {
-      if (raf || reduced) return
-      last = -1
-      raf = requestAnimationFrame(frame)
-    }
-    const stop = () => {
-      cancelAnimationFrame(raf)
-      raf = 0
     }
 
     const onMove = (e: PointerEvent) => {
@@ -237,23 +195,17 @@ export function MoodField({ intenseColor }: { intenseColor: string }) {
       mouse.want = 1
     }
     const onLeave = () => (mouse.want = 0)
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (!reduced) {
       host.addEventListener('pointermove', onMove)
       host.addEventListener('pointerleave', onLeave)
       host.addEventListener('pointercancel', onLeave)
     }
 
-    // Only animate while visible; a still frame covers resizes while paused.
-    const io = new IntersectionObserver(([entry]) => (entry?.isIntersecting ? start() : stop()))
-    io.observe(host)
-    const ro = new ResizeObserver(() => !raf && draw())
-    ro.observe(host)
-    draw()
+    const stopLoop = runLoop(host, step, draw, reduced)
 
     return () => {
-      stop()
-      io.disconnect()
-      ro.disconnect()
+      stopLoop()
       host.removeEventListener('pointermove', onMove)
       host.removeEventListener('pointerleave', onLeave)
       host.removeEventListener('pointercancel', onLeave)

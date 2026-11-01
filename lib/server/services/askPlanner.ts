@@ -15,7 +15,7 @@ const UNSURE =
   'I could not answer that reliably from your plan. Open the Budget or Timeline tab for exact figures, or try a what-if.'
 
 /** Compact plan facts for grounding, trimmed to about 6,000 characters (done tasks and extra ideas go first). */
-export function askFacts(input: PlanInput, v: StoredVersion, today: string) {
+function askFacts(input: PlanInput, v: StoredVersion, today: string) {
   const tasks = allTasks(v.phases)
   const facts = {
     today,

@@ -1,13 +1,13 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { fullscreenProgram, rgb, runLoop } from '@/components/webgl'
 
 // Original glowing-ribbon background, written from the public description and props of Originkit's "Ribbon Glow 4"
 // (no Originkit code). Each ribbon is accumulated from 84 stacked sheets of light across its width, so its edges
 // catch the light and it brightens into a crease where it folds. A Gaussian field around the pointer swirls the plane
 // (up to 1.25 rad) and drags it along the smoothed, speed-capped pointer velocity. Filmic tone mapping lets crossing
-// ribbons saturate instead of clipping to white; light is screened over dark grounds and laid like pigment over light
-// ones. Rendered at half resolution with a 2x device-pixel cap and an interleaved-gradient-noise dither. Reduced
+// ribbons saturate instead of clipping to white; the light is screened over the dark ground. Rendered at half resolution with a 2x device-pixel cap and an interleaved-gradient-noise dither. Reduced
 // motion gets one still frame; the loop stops while off screen.
 
 // Defaults from the documented props: size 100, angle 0, hover 100, reach 240, ribbonCount 3, speed 50.
@@ -17,6 +17,7 @@ const HOVER = 1
 const REACH = 240
 const RIBBON_COUNT = 3
 const SPEED = 1
+const BACKGROUND = '#0B0A10'
 const MAX_DPR = 2
 const SCALE = 0.5 // half-resolution field, upsampled by CSS
 const MAX_COLORS = 5
@@ -28,7 +29,7 @@ const VERT = `attribute vec2 aPos; void main(){ gl_Position = vec4(aPos, 0.0, 1.
 const FRAG = `
 precision highp float;
 uniform vec2 uRes, uMouse, uVel;
-uniform float uTime, uPresence, uReach, uHover, uSize, uAngle, uCount, uLight;
+uniform float uTime, uPresence, uReach, uHover, uSize, uAngle, uCount;
 uniform vec3 uBg;
 uniform vec3 uColorA[${MAX_COLORS}];
 uniform vec3 uColorB[${MAX_COLORS}];
@@ -71,31 +72,16 @@ void main(){
   // Filmic (ACES fit) per channel, then a slight per-channel gamma: overlaps go deeper in hue, not white.
   vec3 c = clamp((hdr * (2.51 * hdr + 0.03)) / (hdr * (2.43 * hdr + 0.59) + 0.14), 0.0, 1.0);
   c = pow(c, vec3(0.95, 1.0, 1.05));
-  vec3 lit = 1.0 - (1.0 - uBg) * (1.0 - c);                       // light over a dark ground
-  float amt = max(max(c.r, c.g), c.b);
-  vec3 hue = c / max(amt, 1e-4);
-  vec3 pigment = uBg * (1.0 - (1.0 - hue) * amt);                  // pigment on paper
-  vec3 col = mix(lit, pigment, uLight);
+  vec3 col = 1.0 - (1.0 - uBg) * (1.0 - c); // light screened over the dark ground
   float n = fract(52.9829189 * fract(dot(frag, vec2(0.06711056, 0.00583715))));
   gl_FragColor = vec4(col + (n - 0.5) / 255.0, 1.0);
 }
 `
 
-const rgb = (hex: string): [number, number, number] => {
-  const n = parseInt(hex.slice(1, 7), 16)
-  return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255]
-}
-
 /** Animated ribbons that fill their positioned parent and swirl toward the cursor anywhere over that parent. */
-export function RibbonGlow({
-  colors,
-  background = '#0B0A10',
-}: {
-  colors: string[]
-  background?: string
-}) {
+export function RibbonGlow({ colors }: { colors: string[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const colorsRef = useRef({ colors, background })
+  const colorsRef = useRef(colors)
   const redrawRef = useRef<() => void>(() => {})
 
   useEffect(() => {
@@ -107,29 +93,8 @@ export function RibbonGlow({
       depth: false,
       stencil: false,
     })
-    if (!canvas || !host || !gl) return // no WebGL: the CSS background colour shows instead
-
-    const compile = (type: number, src: string) => {
-      const sh = gl.createShader(type)
-      if (!sh) return null
-      gl.shaderSource(sh, src)
-      gl.compileShader(sh)
-      return sh
-    }
-    const vs = compile(gl.VERTEX_SHADER, VERT)
-    const fs = compile(gl.FRAGMENT_SHADER, FRAG)
-    const prog = gl.createProgram()
-    if (!vs || !fs || !prog) return
-    gl.attachShader(prog, vs)
-    gl.attachShader(prog, fs)
-    gl.linkProgram(prog)
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return
-    gl.useProgram(prog)
-    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer())
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
-    const aPos = gl.getAttribLocation(prog, 'aPos')
-    gl.enableVertexAttribArray(aPos)
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0)
+    const prog = gl && fullscreenProgram(gl, VERT, FRAG)
+    if (!canvas || !host || !gl || !prog) return // no WebGL: the CSS background colour shows instead
 
     const loc = (name: string) => gl.getUniformLocation(prog, name)
     const U = {
@@ -139,11 +104,10 @@ export function RibbonGlow({
       time: loc('uTime'),
       presence: loc('uPresence'),
       reach: loc('uReach'),
-      bg: loc('uBg'),
       a: loc('uColorA'),
       b: loc('uColorB'),
-      light: loc('uLight'),
     }
+    gl.uniform3fv(loc('uBg'), rgb(BACKGROUND))
     gl.uniform1f(loc('uHover'), HOVER)
     gl.uniform1f(loc('uSize'), SIZE)
     gl.uniform1f(loc('uAngle'), ANGLE)
@@ -167,37 +131,26 @@ export function RibbonGlow({
 
     const draw = () => {
       resize()
-      const { colors: cs, background: bg } = colorsRef.current
-      const list = cs.slice(0, MAX_COLORS)
+      const list = colorsRef.current.slice(0, MAX_COLORS)
       const A = new Float32Array(MAX_COLORS * 3)
       const B = new Float32Array(MAX_COLORS * 3)
       for (let k = 0; k < MAX_COLORS; k++) {
         A.set(rgb(list[k % list.length] ?? '#ffffff'), k * 3)
         B.set(rgb(list[(k + 1) % list.length] ?? '#ffffff'), k * 3)
       }
-      const ground = rgb(bg)
-      const luma = 0.2126 * ground[0] + 0.7152 * ground[1] + 0.0722 * ground[2]
       gl.uniform2f(U.res, canvas.width, canvas.height)
       gl.uniform2f(U.mouse, ptr.x * scale, canvas.height - ptr.y * scale)
       gl.uniform2f(U.vel, ptr.vx, -ptr.vy)
       gl.uniform1f(U.time, time)
       gl.uniform1f(U.presence, ptr.presence)
       gl.uniform1f(U.reach, REACH * scale)
-      gl.uniform3f(U.bg, ground[0], ground[1], ground[2])
       gl.uniform3fv(U.a, A)
       gl.uniform3fv(U.b, B)
-      gl.uniform1f(U.light, luma > 0.5 ? 1 : 0)
       gl.drawArrays(gl.TRIANGLES, 0, 3)
     }
     redrawRef.current = draw
 
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let raf = 0
-    let last = -1
-    const frame = (now: number) => {
-      raf = requestAnimationFrame(frame)
-      const dt = last < 0 ? 0 : Math.min(0.1, (now - last) / 1000)
-      last = now
+    const step = (dt: number) => {
       time += dt * SPEED
       const k = 1 - Math.pow(1 - 0.18, dt * 60)
       const px = ptr.x
@@ -217,16 +170,6 @@ export function RibbonGlow({
         ptr.vx += (vx - ptr.vx) * k
         ptr.vy += (vy - ptr.vy) * k
       }
-      draw()
-    }
-    const start = () => {
-      if (raf || reduced) return
-      last = -1
-      raf = requestAnimationFrame(frame)
-    }
-    const stop = () => {
-      cancelAnimationFrame(raf)
-      raf = 0
     }
 
     const onMove = (e: PointerEvent) => {
@@ -240,22 +183,17 @@ export function RibbonGlow({
       ptr.want = 1
     }
     const onLeave = () => (ptr.want = 0)
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (!reduced) {
       host.addEventListener('pointermove', onMove)
       host.addEventListener('pointerleave', onLeave)
       host.addEventListener('pointercancel', onLeave)
     }
 
-    const io = new IntersectionObserver(([entry]) => (entry?.isIntersecting ? start() : stop()))
-    io.observe(host)
-    const ro = new ResizeObserver(() => !raf && draw())
-    ro.observe(host)
-    draw()
+    const stopLoop = runLoop(host, step, draw, reduced)
 
     return () => {
-      stop()
-      io.disconnect()
-      ro.disconnect()
+      stopLoop()
       host.removeEventListener('pointermove', onMove)
       host.removeEventListener('pointerleave', onLeave)
       host.removeEventListener('pointercancel', onLeave)
@@ -265,9 +203,9 @@ export function RibbonGlow({
 
   // Colour changes reuse the same GL context; redraw at once in case the loop is paused.
   useEffect(() => {
-    colorsRef.current = { colors, background }
+    colorsRef.current = colors
     redrawRef.current()
-  }, [colors, background])
+  }, [colors])
 
   return <canvas ref={canvasRef} className="ribbon-glow" aria-hidden />
 }

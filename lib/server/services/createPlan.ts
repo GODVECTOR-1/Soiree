@@ -12,7 +12,7 @@ import { generateIdeas, personalizeTimeline, reviewAllocation, tailorVendors } f
 import { isoDay } from './shared'
 
 /** Checks Zod cannot express: dates relative to today (one day of slack for time zones) and priority allowlists. */
-export function validateNewPlan(input: PlanInput, today: string) {
+function validateNewPlan(input: PlanInput, today: string) {
   if (input.date < addDays(today, -1))
     throw errors.validation('The event date must be today or later.')
   if (input.planningStart > input.date)

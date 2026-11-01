@@ -2,7 +2,7 @@ import type { Currency, EventType } from '../schemas'
 import { categories } from '../categories'
 
 /** How a budget line behaves when money moves: flexible gives first, fixed gives last, buffer absorbs surprises. */
-export type Flex = 'fixed' | 'semi' | 'flexible' | 'buffer'
+type Flex = 'fixed' | 'semi' | 'flexible' | 'buffer'
 export type LineTemplate = {
   label: string
   share: number

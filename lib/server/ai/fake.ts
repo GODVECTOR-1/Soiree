@@ -6,7 +6,7 @@ import type { Currency, EventType } from '@/lib/schemas'
 import { generateValidated, type AiProvider, type AiRequest } from './provider'
 
 type Json = Record<string, unknown>
-export type FakeContext = { facts: Json; data: Json; attempt: number }
+type FakeContext = { facts: Json; data: Json; attempt: number }
 export type FakeHandler = (ctx: FakeContext) => unknown
 
 const block = (user: string, tag: string): Json => {

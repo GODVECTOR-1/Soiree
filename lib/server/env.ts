@@ -29,7 +29,7 @@ const Env = z
     need('SUPABASE_SECRET_KEY', e.DB_PROVIDER === 'supabase')
     need('RATE_LIMIT_SALT', e.DB_PROVIDER === 'supabase')
   })
-export type Env = z.infer<typeof Env>
+type Env = z.infer<typeof Env>
 
 let cached: Env | undefined
 

@@ -56,11 +56,11 @@ export function cleanOutput(text: string, max: number): string {
 }
 
 /** Every number written in a text (commas removed, so "₹3,00,000" is 300000). */
-export const numbersIn = (text: string) =>
+const numbersIn = (text: string) =>
   (text.match(NUMBER) ?? []).map((n) => Number(n.replace(/,/g, '')))
 
 /** All numbers in a facts object, including those inside strings, plus their absolute values. */
-export function factNumbers(facts: unknown, out = new Set<number>()): Set<number> {
+function factNumbers(facts: unknown, out = new Set<number>()): Set<number> {
   if (typeof facts === 'number') out.add(facts).add(Math.abs(facts))
   else if (typeof facts === 'string') numbersIn(facts).forEach((n) => out.add(n))
   else if (Array.isArray(facts)) facts.forEach((f) => factNumbers(f, out))

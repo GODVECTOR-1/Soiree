@@ -10,7 +10,7 @@ import { etagOf, isoDay, toPublicPlan } from './shared'
 const DEMO = /^demo-(wedding|birthday|community)$/
 
 /** Demo plans are generated from the samples on read, dated from today so they never go stale. Never stored. */
-export function demoPlan(type: EventType, today: string): Plan {
+function demoPlan(type: EventType, today: string): Plan {
   const input = {
     ...samples[type],
     planningStart: today,

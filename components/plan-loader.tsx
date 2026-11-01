@@ -69,7 +69,7 @@ async function persist(
  * never reads a token.
  */
 export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view' }) {
-  const { token } = usePlanAccess(slug, mode === 'edit')
+  const token = usePlanAccess(slug, mode === 'edit')
   const [state, setState] = useState<State>({ slug, status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const current: State = state.slug === slug ? state : { slug, status: 'loading' }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { allLabels } from '../../lib/categories'
+import { categories } from '../../lib/categories'
 import { addDays, dateParts, daysBetween, money, shortDate } from '../../lib/format'
 import { allocate } from '../../lib/domain/allocate'
 import { budgetTemplates } from '../../lib/domain/templates'
@@ -45,7 +45,9 @@ describe('templates', () => {
   it('sum to 100 and use the wizard labels', () => {
     for (const [type, tpl] of Object.entries(budgetTemplates)) {
       expect(sum(tpl.map((t) => t.share))).toBe(100)
-      expect(tpl.map((t) => t.label)).toEqual(allLabels(type as PlanInput['eventType']))
+      // Every category, then a Buffer line (community budgets already end in a contingency reserve).
+      const cats = categories[type as PlanInput['eventType']]
+      expect(tpl.map((t) => t.label)).toEqual(type === 'community' ? cats : [...cats, 'Buffer'])
     }
   })
 })

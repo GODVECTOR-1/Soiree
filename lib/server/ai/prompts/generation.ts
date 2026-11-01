@@ -181,7 +181,6 @@ const ideasSchema = z.object({
           })
     }),
 })
-export type IdeaDraft = z.infer<typeof ideasSchema>['ideas'][number]
 
 /** 12 personal ideas: at least 2 each of theme, menu, activity, decor and 1 each of music and favor. */
 export function ideasPrompt(input: PlanInput, feedback?: string, avoidTitles: string[] = []) {

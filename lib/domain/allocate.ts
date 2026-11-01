@@ -15,7 +15,7 @@ type AllocInput = Pick<
   PlanInput,
   'eventType' | 'priorities' | 'totalBudget' | 'currency' | 'cityTier'
 >
-export type LineNote = { rationale?: string; tradeoffNote?: string }
+type LineNote = { rationale?: string; tradeoffNote?: string }
 
 function rationale(t: LineTemplate, rank: number) {
   if (rank >= 0) return `Protected because you ranked it number ${rank + 1}.`
@@ -28,7 +28,7 @@ function rationale(t: LineTemplate, rank: number) {
 }
 
 /** Percentage shares per template line: template, city-tier shift, then rank boosts funded above floors. */
-export function baselineShares(input: AllocInput): number[] {
+function baselineShares(input: AllocInput): number[] {
   const tpl = budgetTemplates[input.eventType]
   const rank = tpl.map((t) => input.priorities.indexOf(t.label))
   const shares = tpl.map((t) => t.share)

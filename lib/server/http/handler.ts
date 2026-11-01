@@ -24,7 +24,7 @@ type Options<B> = {
   body?: z.ZodType<B>
 }
 
-export type HandlerContext<B> = {
+type HandlerContext<B> = {
   req: Request
   requestId: string
   params: Record<string, string>
@@ -79,7 +79,7 @@ async function authorize(c: Container, req: Request, slug = ''): Promise<PlanRec
 }
 
 /** Turn any thrown value into an `ApiErrorBody` response. Unknown errors become a generic 500 with the request id. */
-export function errorResponse(e: unknown, requestId: string): Response {
+function errorResponse(e: unknown, requestId: string): Response {
   const err = e instanceof AppError ? e : null
   if (!err)
     log('unhandled_error', {
