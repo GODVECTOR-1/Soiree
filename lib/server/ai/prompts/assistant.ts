@@ -6,29 +6,31 @@ import { request } from './system'
 
 /** 2-3 sentence narrative for a scenario whose numbers code already computed. */
 export function narrativePrompt(facts: object) {
-  return request(
-    'narrative',
-    'Explain this budget change to the planner in 2 or 3 short sentences: what changed, what stayed protected, and what gave way. Use only numbers from the facts.',
+  return request({
+    task: 'narrative',
+    instructions:
+      'Explain this budget change to the planner in 2 or 3 short sentences: what changed, what stayed protected, and what gave way. Use only numbers from the facts.',
     facts,
-    {},
-    z.object({ narrative: z.string().min(10).max(400) }),
-  )
+    data: {},
+    schema: z.object({ narrative: z.string().min(10).max(400) }),
+  })
 }
 
 /** Grounded Q&A: answer only from plan data; references point at plan items by id. */
 export function askPrompt(facts: object, input: PlanInput, ask: AskRequest) {
-  return request(
-    'ask',
-    "Answer the planner's latest question using only the plan facts. If the plan does not contain the answer, say so plainly and suggest trying a what-if scenario. Keep it under 120 words. Add references to the budget lines, tasks, vendors or ideas you used, by their exact id.",
+  return request({
+    task: 'ask',
+    instructions:
+      "Answer the planner's latest question using only the plan facts. If the plan does not contain the answer, say so plainly and suggest trying a what-if scenario. Keep it under 120 words. Add references to the budget lines, tasks, vendors or ideas you used, by their exact id.",
     facts,
-    {
+    data: {
       question: ask.question,
       history: ask.history,
       notes: input.notes ?? '',
       vibes: input.vibes,
       diet: input.diet,
     },
-    z.object({
+    schema: z.object({
       answer: z.string().min(1).max(900),
       references: z
         .array(
@@ -40,7 +42,7 @@ export function askPrompt(facts: object, input: PlanInput, ask: AskRequest) {
         )
         .max(6),
     }),
-  )
+  })
 }
 
 const MAPPED = [
@@ -70,15 +72,16 @@ export function customMappingPrompt(input: PlanInput, text: string, today: strin
       unsupported: 'anything else',
     },
   }
-  return request(
-    'custom_mapping',
-    'Turn the user\'s request into one supported scenario kind with its value or priorities, following the rules. If it does not fit, return kind "unsupported".',
+  return request({
+    task: 'custom_mapping',
+    instructions:
+      'Turn the user\'s request into one supported scenario kind with its value or priorities, following the rules. If it does not fit, return kind "unsupported".',
     facts,
-    { request: text },
-    z.object({
+    data: { request: text },
+    schema: z.object({
       kind: z.enum(MAPPED),
       value: z.number().optional(),
       priorities: z.array(z.string()).max(3).optional(),
     }),
-  )
+  })
 }

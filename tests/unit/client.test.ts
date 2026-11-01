@@ -9,6 +9,7 @@ import {
   blankInput,
   parseDraft,
   splitList,
+  stepProblems,
   togglePriority,
 } from '@/lib/plan-form'
 import { eventColors, eventLabels } from '@/lib/event-theme'
@@ -225,5 +226,22 @@ describe('event theme', () => {
         ),
       )
     }
+  })
+})
+
+describe('wizard steps', () => {
+  const today = '2026-11-01'
+  const valid = { ...samples.wedding, planningStart: today }
+
+  it('stops on the basics with field errors, and on priorities with a message', () => {
+    expect(stepProblems(1, blankInput, today)).toEqual({ fields: {}, message: '' })
+    expect(
+      Object.keys(stepProblems(2, { ...blankInput, planningStart: today }, today).fields),
+    ).toContain('title')
+    expect(stepProblems(2, valid, today)).toEqual({ fields: {}, message: '' })
+    expect(stepProblems(3, { ...valid, priorities: [] }, today).message).toBe(
+      'Choose at least one priority.',
+    )
+    expect(stepProblems(3, valid, today).message).toBe('')
   })
 })

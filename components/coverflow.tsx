@@ -34,8 +34,67 @@ function subscribeMotion(onChange: () => void) {
   return () => query.removeEventListener('change', onChange)
 }
 
-export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: string }) {
-  const n = slides.length
+/** Slide `i`'s place relative to the active slide, the short way round: 0 is active, negative is left. */
+function offsetFrom(i: number, active: number, n: number) {
+  let rel = i - active
+  if (rel > n / 2) rel -= n
+  if (rel < -n / 2) rel += n
+  return rel
+}
+
+/** The 3D placement for a slide `rel` steps from the active one; beyond MAX_VISIBLE it fades out. */
+function slideStyle(rel: number): CSSProperties {
+  const ax = Math.abs(rel)
+  const visible = ax <= MAX_VISIBLE
+  return {
+    transform: `translateX(calc(var(--card-w) * var(--spread) * ${rel})) translateZ(${-ax * DEPTH}px) rotateY(${-rel * TILT}deg) rotateZ(${rel * SIDE_TILT}deg) scale(${Math.max(0.4, 1 - ax * SCALE_STEP)})`,
+    transition: `transform ${MOVE_S}s ${EASE}, opacity ${MOVE_S}s ${EASE}`,
+    opacity: visible ? 1 : 0,
+    pointerEvents: visible ? 'auto' : 'none',
+    cursor: rel === 0 ? 'default' : 'pointer',
+  }
+}
+
+type SlideProps = {
+  slide: CoverflowSlide
+  index: number
+  count: number
+  rel: number
+  onPick: () => void
+}
+
+function Slide({ slide, index, count, rel, onPick }: SlideProps) {
+  const isActive = rel === 0
+  return (
+    <div
+      className="coverflow-card"
+      style={slideStyle(rel)}
+      role="group"
+      aria-roledescription="slide"
+      aria-label={`${index + 1} of ${count}`}
+      aria-hidden={!isActive}
+      onClick={() => !isActive && onPick()}
+    >
+      {/* Above the fold: load every photo now, the first one first (it is the LCP image). */}
+      <Image
+        src={slide.src}
+        alt={slide.alt}
+        fill
+        sizes="220px"
+        loading="eager"
+        fetchPriority={index === 0 ? 'high' : 'auto'}
+        draggable={false}
+      />
+      <div
+        className="coverflow-dim"
+        style={{ opacity: isActive ? 0 : DIM, transition: `opacity ${MOVE_S}s ${EASE}` }}
+      />
+    </div>
+  )
+}
+
+/** Which slide is active, moves that ignore input mid-move, and autoplay that pauses on hover, focus or request. */
+function useCarousel(n: number) {
   const [active, setActive] = useState(0)
   const [hovering, setHovering] = useState(false)
   // null until the visitor chooses; until then reduced motion decides.
@@ -65,6 +124,13 @@ export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: 
     return () => window.clearInterval(id)
   }, [paused, hovering, n, go])
 
+  return { active, go, paused, togglePaused: () => setPausedChoice(!paused), setHovering }
+}
+
+export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: string }) {
+  const n = slides.length
+  const { active, go, paused, togglePaused, setHovering } = useCarousel(n)
+
   return (
     <div
       className="coverflow"
@@ -84,55 +150,23 @@ export function Coverflow({ slides, label }: { slides: CoverflowSlide[]; label: 
       }}
     >
       <div className="coverflow-stage">
-        {slides.map((slide, i) => {
-          let rel = i - active
-          if (rel > n / 2) rel -= n
-          if (rel < -n / 2) rel += n
-          const ax = Math.abs(rel)
-          const visible = ax <= MAX_VISIBLE
-          const isActive = rel === 0
-          const style: CSSProperties = {
-            transform: `translateX(calc(var(--card-w) * var(--spread) * ${rel})) translateZ(${-ax * DEPTH}px) rotateY(${-rel * TILT}deg) rotateZ(${rel * SIDE_TILT}deg) scale(${Math.max(0.4, 1 - ax * SCALE_STEP)})`,
-            transition: `transform ${MOVE_S}s ${EASE}, opacity ${MOVE_S}s ${EASE}`,
-            opacity: visible ? 1 : 0,
-            pointerEvents: visible ? 'auto' : 'none',
-            cursor: isActive ? 'default' : 'pointer',
-          }
-          return (
-            <div
-              key={slide.src}
-              className="coverflow-card"
-              style={style}
-              role="group"
-              aria-roledescription="slide"
-              aria-label={`${i + 1} of ${n}`}
-              aria-hidden={!isActive}
-              onClick={() => !isActive && go(() => i)}
-            >
-              {/* Above the fold: load every photo now, the first one first (it is the LCP image). */}
-              <Image
-                src={slide.src}
-                alt={slide.alt}
-                fill
-                sizes="220px"
-                loading="eager"
-                fetchPriority={i === 0 ? 'high' : 'auto'}
-                draggable={false}
-              />
-              <div
-                className="coverflow-dim"
-                style={{ opacity: isActive ? 0 : DIM, transition: `opacity ${MOVE_S}s ${EASE}` }}
-              />
-            </div>
-          )
-        })}
+        {slides.map((slide, i) => (
+          <Slide
+            key={slide.src}
+            slide={slide}
+            index={i}
+            count={n}
+            rel={offsetFrom(i, active, n)}
+            onPick={() => go(() => i)}
+          />
+        ))}
       </div>
       {n > 1 && (
         <button
           type="button"
           className="coverflow-toggle"
           aria-label={paused ? 'Play slideshow' : 'Pause slideshow'}
-          onClick={() => setPausedChoice(!paused)}
+          onClick={togglePaused}
         >
           {paused ? <Play aria-hidden /> : <Pause aria-hidden />}
         </button>

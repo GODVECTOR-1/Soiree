@@ -79,13 +79,14 @@ export function allocationReview(input: PlanInput, baseline: BudgetLine[]) {
   }
   return {
     facts,
-    req: request(
-      'allocation_review',
-      'Review this budget split in percent. Move any line by at most 6 points from its baseline. Priority lines must not go below their baseline. No line may go below its floor. Shares must add up to 100. For each line write a one-sentence rationale (max 160 characters) and a short trade-off note (max 100 characters) on what gives if money gets tight. Do not mention amounts or percentages in the text.',
+    req: request({
+      task: 'allocation_review',
+      instructions:
+        'Review this budget split in percent. Move any line by at most 6 points from its baseline. Priority lines must not go below their baseline. No line may go below its floor. Shares must add up to 100. For each line write a one-sentence rationale (max 160 characters) and a short trade-off note (max 100 characters) on what gives if money gets tight. Do not mention amounts or percentages in the text.',
       facts,
-      personal(input),
-      reviewSchema(lines),
-    ),
+      data: personal(input),
+      schema: reviewSchema(lines),
+    }),
   }
 }
 
@@ -114,13 +115,14 @@ export function timelinePersonalization(input: PlanInput, tasks: Task[]) {
     eventType: input.eventType,
     tasks: tasks.map((t) => ({ id: t.id, title: t.title, offsetDays: t.offsetDays })),
   }
-  return request(
-    'timeline',
-    'Personalize this timeline using the user data. Rename at most 8 tasks so they fit this event, keeping each id and its meaning. Add at most 6 tasks that the notes clearly call for, each with offsetDays (days before the event, 0 to 365) and an optional budget tag. If nothing is needed, return empty lists.',
+  return request({
+    task: 'timeline',
+    instructions:
+      'Personalize this timeline using the user data. Rename at most 8 tasks so they fit this event, keeping each id and its meaning. Add at most 6 tasks that the notes clearly call for, each with offsetDays (days before the event, 0 to 365) and an optional budget tag. If nothing is needed, return empty lists.',
     facts,
-    personal(input),
+    data: personal(input),
     schema,
-  )
+  })
 }
 
 // ---------- Vendor questions ----------
@@ -140,13 +142,14 @@ export function vendorQuestionsPrompt(input: PlanInput, vendors: VendorItem[]) {
     priorities: input.priorities,
     vendors: vendors.map((v) => ({ id: v.id, category: v.category })),
   }
-  return request(
-    'vendor_questions',
-    'For each vendor, write up to 3 short questions the user should ask before booking, tailored to the user data (needs, diet, access, style). Questions only: no prices, no vendor names.',
+  return request({
+    task: 'vendor_questions',
+    instructions:
+      'For each vendor, write up to 3 short questions the user should ask before booking, tailored to the user data (needs, diet, access, style). Questions only: no prices, no vendor names.',
     facts,
-    personal(input),
+    data: personal(input),
     schema,
-  )
+  })
 }
 
 // ---------- Ideas ----------
@@ -191,11 +194,12 @@ export function ideasPrompt(input: PlanInput, feedback?: string, avoidTitles: st
     minimumPerKind: MIN_PER_KIND,
     avoidTitles,
   }
-  return request(
-    'ideas',
-    'Suggest 12 personal ideas for this event that respect the vibes, diet, accessibility needs and notes. Include at least 2 each of theme, menu, activity and decor, and at least 1 each of music and favor. Set fitsPriority only to one of the listed priorities when the idea supports it; otherwise omit it. Never name real vendors, brands or venues. Do not repeat the titles to avoid. Titles max 80 characters, blurbs one or two sentences.',
+  return request({
+    task: 'ideas',
+    instructions:
+      'Suggest 12 personal ideas for this event that respect the vibes, diet, accessibility needs and notes. Include at least 2 each of theme, menu, activity and decor, and at least 1 each of music and favor. Set fitsPriority only to one of the listed priorities when the idea supports it; otherwise omit it. Never name real vendors, brands or venues. Do not repeat the titles to avoid. Titles max 80 characters, blurbs one or two sentences.',
     facts,
-    { ...personal(input), feedback: feedback ?? '' },
-    ideasSchema,
-  )
+    data: { ...personal(input), feedback: feedback ?? '' },
+    schema: ideasSchema,
+  })
 }

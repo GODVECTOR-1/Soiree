@@ -1,7 +1,15 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { fullscreenProgram, rgb, runLoop } from '@/components/webgl'
+import {
+  devicePixels,
+  fitCanvas,
+  fullscreenProgram,
+  listenPointer,
+  prefersReducedMotion,
+  rgb,
+  runLoop,
+} from '@/components/webgl'
 
 // Adapted from Originkit's Mood Field with the user's presets. The shader is unchanged. Gone: Framer plumbing
 // (CSS-var colour probing, prop groups, the 1200x800 minimum size). Added: the cursor is tracked over the whole
@@ -114,6 +122,28 @@ const REACH = 260
 const SWIRL = Math.PI / 2
 const MAX_DPR = 1.5
 
+/** Sets the fixed uniforms and returns the locations updated every frame. */
+function moodUniforms(gl: WebGLRenderingContext, prog: WebGLProgram) {
+  const loc = (name: string) => gl.getUniformLocation(prog, name)
+  gl.uniform1f(loc('uEmotion'), 0)
+  gl.uniform3fv(loc('uCalm'), rgb(CALM))
+  gl.uniform3fv(loc('uBg'), rgb(BG))
+  gl.uniform1f(loc('uScale'), SCALE)
+  gl.uniform1f(loc('uWarp'), WARP)
+  gl.uniform1f(loc('uRidge'), RIDGE)
+  gl.uniform1f(loc('uContrast'), CONTRAST)
+  gl.uniform1f(loc('uHover'), 1)
+  gl.uniform1f(loc('uSwirl'), SWIRL)
+  return {
+    res: loc('iResolution'),
+    mouse: loc('iMouse'),
+    time: loc('iTime'),
+    intense: loc('uIntense'),
+    reach: loc('uReach'),
+    pointer: loc('uPointer'),
+  }
+}
+
 /** Animated WebGL background that fills its positioned parent and swirls toward the cursor. */
 export function MoodField({ intenseColor }: { intenseColor: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -133,43 +163,13 @@ export function MoodField({ intenseColor }: { intenseColor: string }) {
     const prog = gl && fullscreenProgram(gl, VERT, FRAG)
     if (!canvas || !host || !gl || !prog) return // no WebGL: the CSS background colour shows instead
 
-    const loc = (name: string) => gl.getUniformLocation(prog, name)
-    const u = {
-      res: loc('iResolution'),
-      mouse: loc('iMouse'),
-      time: loc('iTime'),
-      intense: loc('uIntense'),
-      reach: loc('uReach'),
-      pointer: loc('uPointer'),
-    }
-    gl.uniform1f(loc('uEmotion'), 0)
-    gl.uniform3fv(loc('uCalm'), rgb(CALM))
-    gl.uniform3fv(loc('uBg'), rgb(BG))
-    gl.uniform1f(loc('uScale'), SCALE)
-    gl.uniform1f(loc('uWarp'), WARP)
-    gl.uniform1f(loc('uRidge'), RIDGE)
-    gl.uniform1f(loc('uContrast'), CONTRAST)
-    gl.uniform1f(loc('uHover'), 1)
-    gl.uniform1f(loc('uSwirl'), SWIRL)
-
-    let bw = 0
-    let bh = 0
-    const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
-      const w = Math.max(1, Math.round(canvas.clientWidth * dpr))
-      const h = Math.max(1, Math.round(canvas.clientHeight * dpr))
-      if (w === bw && h === bh) return
-      bw = w
-      bh = h
-      canvas.width = w
-      canvas.height = h
-      gl.viewport(0, 0, w, h)
-    }
+    const u = moodUniforms(gl, prog)
 
     const mouse = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5, presence: 0, want: 0 }
     let clock = 0
     const draw = () => {
-      resize()
+      fitCanvas(canvas, gl, devicePixels(MAX_DPR))
+      const { width: bw, height: bh } = canvas
       gl.uniform2f(u.res, bw, bh)
       gl.uniform2f(u.mouse, mouse.x * bw, (1 - mouse.y) * bh) // pointer y is top-down, gl_FragCoord.y bottom-up
       gl.uniform1f(u.time, clock)
@@ -195,20 +195,13 @@ export function MoodField({ intenseColor }: { intenseColor: string }) {
       mouse.want = 1
     }
     const onLeave = () => (mouse.want = 0)
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (!reduced) {
-      host.addEventListener('pointermove', onMove)
-      host.addEventListener('pointerleave', onLeave)
-      host.addEventListener('pointercancel', onLeave)
-    }
-
+    const reduced = prefersReducedMotion()
+    const stopPointer = reduced ? () => {} : listenPointer(host, onMove, onLeave)
     const stopLoop = runLoop(host, step, draw, reduced)
 
     return () => {
       stopLoop()
-      host.removeEventListener('pointermove', onMove)
-      host.removeEventListener('pointerleave', onLeave)
-      host.removeEventListener('pointercancel', onLeave)
+      stopPointer()
       redrawRef.current = () => {}
     }
   }, [])

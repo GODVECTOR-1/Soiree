@@ -64,12 +64,8 @@ async function persist(
   }
 }
 
-/**
- * Loads a plan from the API and owns the one seam between the dashboard and the server. `view` mode (the /s/ link)
- * never reads a token.
- */
-export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view' }) {
-  const token = usePlanAccess(slug, mode === 'edit')
+/** Fetches the plan for `slug`; `retry` fetches again. A slug change starts over at "loading". */
+function usePlan(slug: string) {
   const [state, setState] = useState<State>({ slug, status: 'loading' })
   const [attempt, setAttempt] = useState(0)
   const current: State = state.slug === slug ? state : { slug, status: 'loading' }
@@ -80,8 +76,9 @@ export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view'
       .then((plan) => live && setState({ slug, status: 'ready', plan }))
       .catch((e: unknown) => {
         if (!live) return
+        const missing = e instanceof ApiError && e.status === 404
         setState(
-          e instanceof ApiError && e.status === 404
+          missing
             ? { slug, status: 'missing' }
             : { slug, status: 'error', message: errorMessage(e) },
         )
@@ -91,77 +88,18 @@ export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view'
     }
   }, [slug, attempt])
 
-  const plan = current.status === 'ready' ? current.plan : null
-  const canEdit = !!token && !!plan && !plan.readOnly
+  const set = (plan: Plan) => setState({ slug, status: 'ready', plan })
+  const retry = () => setAttempt((n) => n + 1)
+  return { current, set, retry }
+}
 
-  useEffect(() => {
-    if (plan && canEdit)
-      rememberPlan({
-        slug,
-        title: plan.input.title,
-        eventType: plan.input.eventType,
-        date: plan.input.date,
-      })
-  }, [plan, canEdit, slug])
-
-  if (current.status === 'loading')
-    return (
-      <main id="main">
-        <LoadingScreen
-          title="Opening your plan"
-          steps={[
-            'Fetching the latest version',
-            'Checking the budget adds up',
-            'Lining up what is due next',
-          ]}
-        />
-      </main>
-    )
-
-  if (current.status !== 'ready')
-    return (
-      <main className="landing center-page" id="main">
-        <div>
-          <span className="eyebrow">
-            {current.status === 'missing' ? 'Plan not found' : 'Something went wrong'}
-          </span>
-          <h1>
-            {current.status === 'missing'
-              ? 'We couldn’t find that plan'
-              : 'We couldn’t load this plan'}
-          </h1>
-          <p className="muted" role="alert">
-            {current.status === 'missing'
-              ? 'It may have expired, or the link may be incomplete.'
-              : current.message}
-          </p>
-          <div className="hero-actions">
-            {current.status === 'error' && (
-              <button className="primary-btn" onClick={() => setAttempt((n) => n + 1)}>
-                Try again
-              </button>
-            )}
-            <Link
-              className={current.status === 'error' ? 'outline-btn' : 'primary-btn'}
-              href="/create"
-            >
-              Start a plan
-            </Link>
-            <Link className="outline-btn" href="/plans">
-              Your plans
-            </Link>
-          </div>
-        </div>
-      </main>
-    )
-
-  const ready = current.plan
-  const set = (p: Plan) => setState({ slug, status: 'ready', plan: p })
-
-  const onAction = async (action: PlanAction) => {
-    if (!token || !canEdit) return
+/**
+ * Runs an action against the server. Most actions apply locally first and roll back if the server refuses; `apply`
+ * and `vendor-add` wait for the server (it merges progress, or assigns the new vendor's id).
+ */
+function actionRunner(slug: string, token: string, ready: Plan, set: (p: Plan) => void) {
+  return async (action: PlanAction) => {
     if (action.type === 'apply' || action.type === 'vendor-add') {
-      // Not optimistic: the server merges progress (apply) or assigns the new vendor's id.
       const next = await persist(slug, token, ready, action)
       if (next) set(next)
       return
@@ -177,15 +115,88 @@ export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view'
       throw e
     }
   }
+}
 
+const problemCopy = {
+  missing: {
+    eyebrow: 'Plan not found',
+    title: 'We couldn’t find that plan',
+    detail: 'It may have expired, or the link may be incomplete.',
+  },
+  error: { eyebrow: 'Something went wrong', title: 'We couldn’t load this plan', detail: '' },
+}
+
+/** A plan that is missing or failed to load: what happened, and where to go next. */
+function PlanProblem({ state, onRetry }: { state: State; onRetry: () => void }) {
+  const failed = state.status === 'error'
+  const copy = problemCopy[failed ? 'error' : 'missing']
+  return (
+    <main className="landing center-page" id="main">
+      <div>
+        <span className="eyebrow">{copy.eyebrow}</span>
+        <h1>{copy.title}</h1>
+        <p className="muted" role="alert">
+          {state.status === 'error' ? state.message : copy.detail}
+        </p>
+        <div className="hero-actions">
+          {failed && (
+            <button className="primary-btn" onClick={onRetry}>
+              Try again
+            </button>
+          )}
+          <Link className={failed ? 'outline-btn' : 'primary-btn'} href="/create">
+            Start a plan
+          </Link>
+          <Link className="outline-btn" href="/plans">
+            Your plans
+          </Link>
+        </div>
+      </div>
+    </main>
+  )
+}
+
+/**
+ * Loads a plan from the API and owns the one seam between the dashboard and the server. `view` mode (the /s/ link)
+ * never reads a token.
+ */
+export function PlanLoader({ slug, mode }: { slug: string; mode: 'edit' | 'view' }) {
+  const token = usePlanAccess(slug, mode === 'edit')
+  const { current, set, retry } = usePlan(slug)
+  const plan = current.status === 'ready' ? current.plan : null
+  const editToken = plan && !plan.readOnly ? token : null
+
+  useEffect(() => {
+    if (!plan || !editToken) return
+    const { title, eventType, date } = plan.input
+    rememberPlan({ slug, title, eventType, date })
+  }, [plan, editToken, slug])
+
+  if (current.status === 'loading')
+    return (
+      <main id="main">
+        <LoadingScreen
+          title="Opening your plan"
+          steps={[
+            'Fetching the latest version',
+            'Checking the budget adds up',
+            'Lining up what is due next',
+          ]}
+        />
+      </main>
+    )
+  if (current.status !== 'ready') return <PlanProblem state={current} onRetry={retry} />
+
+  const ready = current.plan
+  const run = editToken ? actionRunner(slug, editToken, ready, set) : async () => {}
   return (
     <PlanDashboard
       slug={slug}
       input={ready.input}
       version={ready.current}
-      canEdit={canEdit}
-      token={canEdit ? token : null}
-      onAction={onAction}
+      canEdit={!!editToken}
+      token={editToken}
+      onAction={run}
     />
   )
 }

@@ -58,8 +58,10 @@ export const templateFor = (type: EventType, label: string) =>
 export const floorShare = (t: LineTemplate) => t.share / 2
 
 /** Amounts round to a unit so lines read like a plan, not a calculation (INR 100, others 10, 1 for tiny budgets). */
-export const planningUnit = (total: number, currency: Currency) =>
-  total < 2000 ? 1 : currency === 'INR' ? 100 : 10
+export function planningUnit(total: number, currency: Currency) {
+  if (total < 2000) return 1
+  return currency === 'INR' ? 100 : 10
+}
 
 /** Split `amount` into integers proportional to `weights` that add up exactly (largest remainder). */
 export function distribute(amount: number, weights: number[]): number[] {

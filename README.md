@@ -39,7 +39,7 @@ Open <http://localhost:3000>. The fake provider is deterministic and the memory 
 | Command | What it does |
 |---|---|
 | `pnpm dev` / `pnpm build` / `pnpm start` | Next.js 16 |
-| `pnpm typecheck` / `pnpm lint` | TypeScript strict, ESLint |
+| `pnpm typecheck` / `pnpm lint` | TypeScript strict; ESLint with size and complexity limits (complexity 12, 80-line functions, 250-line files) |
 | `pnpm format` / `pnpm format:check` | Prettier (the check runs in CI) |
 | `pnpm test` / `pnpm test:coverage` | Unit, property, service, route, security and component tests (fakes only, no network) |
 | `pnpm e2e` | Playwright + axe (WCAG 2.2 AA and best practices, any impact) against the real routes with keyless providers (run `pnpm build` first) |

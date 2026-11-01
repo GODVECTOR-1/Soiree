@@ -32,6 +32,39 @@ export function fullscreenProgram(gl: WebGLRenderingContext, vert: string, frag:
   return prog
 }
 
+/** Device pixels per CSS pixel, capped to keep large screens cheap. */
+export const devicePixels = (max: number) => Math.min(window.devicePixelRatio || 1, max)
+
+/** Size the drawing buffer to the canvas's CSS size times `scale`, and the viewport with it, when that changed. */
+export function fitCanvas(canvas: HTMLCanvasElement, gl: WebGLRenderingContext, scale: number) {
+  const w = Math.max(1, Math.round(canvas.clientWidth * scale))
+  const h = Math.max(1, Math.round(canvas.clientHeight * scale))
+  if (canvas.width === w && canvas.height === h) return
+  canvas.width = w
+  canvas.height = h
+  gl.viewport(0, 0, w, h)
+}
+
+/** Whether the visitor asked the system for reduced motion. */
+export const prefersReducedMotion = () =>
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+/** Calls `move` while the pointer moves over `host`, and `leave` when it leaves or is cancelled. Returns the cleanup. */
+export function listenPointer(
+  host: HTMLElement,
+  move: (e: PointerEvent) => void,
+  leave: () => void,
+) {
+  host.addEventListener('pointermove', move)
+  host.addEventListener('pointerleave', leave)
+  host.addEventListener('pointercancel', leave)
+  return () => {
+    host.removeEventListener('pointermove', move)
+    host.removeEventListener('pointerleave', leave)
+    host.removeEventListener('pointercancel', leave)
+  }
+}
+
 /**
  * Each animation frame, `step(dt)` advances the state (dt in seconds, capped at 0.1) and `draw()` renders it. Runs
  * only while `el` is on screen; while paused, and always under reduced motion, a still frame is redrawn on resize.

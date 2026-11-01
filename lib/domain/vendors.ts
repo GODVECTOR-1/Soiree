@@ -116,7 +116,8 @@ export function customVendor(v: PlanVersion, category: string, name?: string): V
 /** How a recorded quote compares with the planning range, or null when there is nothing to compare. */
 export function quoteCheck(v: VendorItem): 'over' | 'under' | 'within' | null {
   if (v.quote === undefined || v.estHigh === 0) return null
-  return v.quote > v.estHigh ? 'over' : v.quote < v.estLow ? 'under' : 'within'
+  if (v.quote > v.estHigh) return 'over'
+  return v.quote < v.estLow ? 'under' : 'within'
 }
 
 /** Re-derive vendor estimate ranges and share percentages after budget lines change. */

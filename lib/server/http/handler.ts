@@ -78,27 +78,40 @@ async function authorize(c: Container, req: Request, slug = ''): Promise<PlanRec
   return plan
 }
 
-/** Turn any thrown value into an `ApiErrorBody` response. Unknown errors become a generic 500 with the request id. */
+/** Log an error nobody planned for and replace it with a generic 500 that quotes the request id. */
+function unexpected(e: unknown, requestId: string): AppError {
+  log('unhandled_error', {
+    requestId,
+    name: e instanceof Error ? e.name : typeof e,
+    detail: e instanceof Error ? e.message.slice(0, 200) : undefined,
+  })
+  const ref = requestId.slice(0, 8)
+  return new AppError('INTERNAL', 500, `Something went wrong. Please try again. (Ref ${ref})`)
+}
+
+/** Turn any thrown value into an `ApiErrorBody` response. */
 function errorResponse(e: unknown, requestId: string): Response {
-  const err = e instanceof AppError ? e : null
-  if (!err)
-    log('unhandled_error', {
-      requestId,
-      name: e instanceof Error ? e.name : typeof e,
-      detail: e instanceof Error ? e.message.slice(0, 200) : undefined,
-    })
-  const status = err?.status ?? 500
-  const body = {
-    error: {
-      code: err?.code ?? 'INTERNAL',
-      message:
-        err?.message ?? `Something went wrong. Please try again. (Ref ${requestId.slice(0, 8)})`,
-      ...(err?.retryAfterSec !== undefined && { retryAfterSec: err.retryAfterSec }),
-    },
-  }
+  const { code, message, status, retryAfterSec } =
+    e instanceof AppError ? e : unexpected(e, requestId)
   const headers: Record<string, string> = { 'x-request-id': requestId, 'cache-control': 'no-store' }
-  if (err?.retryAfterSec !== undefined) headers['retry-after'] = String(err.retryAfterSec)
-  return Response.json(body, { status, headers })
+  if (retryAfterSec !== undefined) headers['retry-after'] = String(retryAfterSec)
+  const error = { code, message, ...(retryAfterSec !== undefined && { retryAfterSec }) }
+  return Response.json({ error }, { status, headers })
+}
+
+/** A handler's result as a response: a Response as is, null as 204, anything else as JSON. */
+function toResponse(out: Response | object | null): Response {
+  if (out instanceof Response) return out
+  return out === null ? new Response(null, { status: 204 }) : Response.json(out)
+}
+
+/** The request body as text when the route takes one; 415 when it is not JSON. */
+async function bodyText(req: Request, takesBody: boolean): Promise<string> {
+  if (!takesBody) return ''
+  const text = await readText(req)
+  if (text.trim() && !req.headers.get('content-type')?.includes('application/json'))
+    throw new AppError('UNSUPPORTED_MEDIA_TYPE', 415, 'Send the request as JSON.')
+  return text
 }
 
 /**
@@ -116,13 +129,7 @@ export function withHandler<B = undefined>(
     try {
       const c = container()
       const params = await route.params
-      const text = opts.body ? await readText(req) : ''
-      if (
-        opts.body &&
-        text.trim() &&
-        !req.headers.get('content-type')?.includes('application/json')
-      )
-        throw new AppError('UNSUPPORTED_MEDIA_TYPE', 415, 'Send the request as JSON.')
+      const text = await bodyText(req, !!opts.body)
       if (opts.limit) await limitIp(c, opts.limit, ipHash(req.headers, c.salt))
       const plan = opts.auth
         ? await authorize(c, req, params.slug)
@@ -131,12 +138,7 @@ export function withHandler<B = undefined>(
       const out = await withDeadline(REQUEST_BUDGET_MS, () =>
         fn({ req, requestId, params, body, plan, c }),
       )
-      res =
-        out instanceof Response
-          ? out
-          : out === null
-            ? new Response(null, { status: 204 })
-            : Response.json(out)
+      res = toResponse(out)
       res.headers.set('x-request-id', requestId)
       if (!res.headers.has('cache-control')) res.headers.set('cache-control', 'no-store')
     } catch (e) {

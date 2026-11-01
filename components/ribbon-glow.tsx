@@ -1,7 +1,15 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { fullscreenProgram, rgb, runLoop } from '@/components/webgl'
+import {
+  devicePixels,
+  fitCanvas,
+  fullscreenProgram,
+  listenPointer,
+  prefersReducedMotion,
+  rgb,
+  runLoop,
+} from '@/components/webgl'
 
 // Original glowing-ribbon background, written from the public description and props of Originkit's "Ribbon Glow 4"
 // (no Originkit code). Each ribbon is accumulated from 84 stacked sheets of light across its width, so its edges
@@ -78,6 +86,70 @@ void main(){
 }
 `
 
+/** Pointer in CSS px (y down), with a smoothed velocity in field units (fractions of the height) per second. */
+type Pointer = {
+  x: number
+  y: number
+  tx: number
+  ty: number
+  vx: number
+  vy: number
+  presence: number
+  want: number
+}
+
+/** Sets the fixed uniforms and returns the locations updated every frame. */
+function ribbonUniforms(gl: WebGLRenderingContext, prog: WebGLProgram) {
+  const loc = (name: string) => gl.getUniformLocation(prog, name)
+  gl.uniform3fv(loc('uBg'), rgb(BACKGROUND))
+  gl.uniform1f(loc('uHover'), HOVER)
+  gl.uniform1f(loc('uSize'), SIZE)
+  gl.uniform1f(loc('uAngle'), ANGLE)
+  gl.uniform1f(loc('uCount'), RIBBON_COUNT)
+  return {
+    res: loc('uRes'),
+    mouse: loc('uMouse'),
+    vel: loc('uVel'),
+    time: loc('uTime'),
+    presence: loc('uPresence'),
+    reach: loc('uReach'),
+    a: loc('uColorA'),
+    b: loc('uColorB'),
+  }
+}
+
+/** Each ribbon's two colours, cycling through the list: ribbon k blends colour k into colour k + 1. */
+function colorPairs(colors: string[]) {
+  const list = colors.slice(0, MAX_COLORS)
+  const a = new Float32Array(MAX_COLORS * 3)
+  const b = new Float32Array(MAX_COLORS * 3)
+  for (let k = 0; k < MAX_COLORS; k++) {
+    a.set(rgb(list[k % list.length] ?? '#ffffff'), k * 3)
+    b.set(rgb(list[(k + 1) % list.length] ?? '#ffffff'), k * 3)
+  }
+  return [a, b] as const
+}
+
+/** Ease the pointer toward its target, and its velocity toward the (speed-capped) velocity of that move. */
+function easePointer(ptr: Pointer, dt: number, height: number) {
+  const k = 1 - Math.pow(1 - 0.18, dt * 60)
+  const px = ptr.x
+  const py = ptr.y
+  ptr.x += (ptr.tx - ptr.x) * k
+  ptr.y += (ptr.ty - ptr.y) * k
+  ptr.presence += (ptr.want - ptr.presence) * k
+  if (dt <= 0) return
+  let vx = (ptr.x - px) / height / dt
+  let vy = (ptr.y - py) / height / dt
+  const sp = Math.hypot(vx, vy)
+  if (sp > VEL_CAP) {
+    vx *= VEL_CAP / sp
+    vy *= VEL_CAP / sp
+  }
+  ptr.vx += (vx - ptr.vx) * k
+  ptr.vy += (vy - ptr.vy) * k
+}
+
 /** Animated ribbons that fill their positioned parent and swirl toward the cursor anywhere over that parent. */
 export function RibbonGlow({ colors }: { colors: string[] }) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -96,48 +168,15 @@ export function RibbonGlow({ colors }: { colors: string[] }) {
     const prog = gl && fullscreenProgram(gl, VERT, FRAG)
     if (!canvas || !host || !gl || !prog) return // no WebGL: the CSS background colour shows instead
 
-    const loc = (name: string) => gl.getUniformLocation(prog, name)
-    const U = {
-      res: loc('uRes'),
-      mouse: loc('uMouse'),
-      vel: loc('uVel'),
-      time: loc('uTime'),
-      presence: loc('uPresence'),
-      reach: loc('uReach'),
-      a: loc('uColorA'),
-      b: loc('uColorB'),
-    }
-    gl.uniform3fv(loc('uBg'), rgb(BACKGROUND))
-    gl.uniform1f(loc('uHover'), HOVER)
-    gl.uniform1f(loc('uSize'), SIZE)
-    gl.uniform1f(loc('uAngle'), ANGLE)
-    gl.uniform1f(loc('uCount'), RIBBON_COUNT)
+    const U = ribbonUniforms(gl, prog)
 
-    let scale = 1
-    const resize = () => {
-      scale = Math.min(window.devicePixelRatio || 1, MAX_DPR) * SCALE
-      const w = Math.max(1, Math.round(canvas.clientWidth * scale))
-      const h = Math.max(1, Math.round(canvas.clientHeight * scale))
-      if (canvas.width !== w || canvas.height !== h) {
-        canvas.width = w
-        canvas.height = h
-        gl.viewport(0, 0, w, h)
-      }
-    }
-
-    // Pointer in CSS px (y down) with a smoothed, capped velocity in field units (fractions of the height) per second.
-    const ptr = { x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0, presence: 0, want: 0 }
+    const ptr: Pointer = { x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0, presence: 0, want: 0 }
     let time = 0
 
     const draw = () => {
-      resize()
-      const list = colorsRef.current.slice(0, MAX_COLORS)
-      const A = new Float32Array(MAX_COLORS * 3)
-      const B = new Float32Array(MAX_COLORS * 3)
-      for (let k = 0; k < MAX_COLORS; k++) {
-        A.set(rgb(list[k % list.length] ?? '#ffffff'), k * 3)
-        B.set(rgb(list[(k + 1) % list.length] ?? '#ffffff'), k * 3)
-      }
+      const scale = devicePixels(MAX_DPR) * SCALE
+      fitCanvas(canvas, gl, scale)
+      const [A, B] = colorPairs(colorsRef.current)
       gl.uniform2f(U.res, canvas.width, canvas.height)
       gl.uniform2f(U.mouse, ptr.x * scale, canvas.height - ptr.y * scale)
       gl.uniform2f(U.vel, ptr.vx, -ptr.vy)
@@ -152,24 +191,7 @@ export function RibbonGlow({ colors }: { colors: string[] }) {
 
     const step = (dt: number) => {
       time += dt * SPEED
-      const k = 1 - Math.pow(1 - 0.18, dt * 60)
-      const px = ptr.x
-      const py = ptr.y
-      ptr.x += (ptr.tx - ptr.x) * k
-      ptr.y += (ptr.ty - ptr.y) * k
-      ptr.presence += (ptr.want - ptr.presence) * k
-      if (dt > 0) {
-        const h = Math.max(canvas.clientHeight, 1)
-        let vx = (ptr.x - px) / h / dt
-        let vy = (ptr.y - py) / h / dt
-        const sp = Math.hypot(vx, vy)
-        if (sp > VEL_CAP) {
-          vx *= VEL_CAP / sp
-          vy *= VEL_CAP / sp
-        }
-        ptr.vx += (vx - ptr.vx) * k
-        ptr.vy += (vy - ptr.vy) * k
-      }
+      easePointer(ptr, dt, Math.max(canvas.clientHeight, 1))
     }
 
     const onMove = (e: PointerEvent) => {
@@ -183,20 +205,13 @@ export function RibbonGlow({ colors }: { colors: string[] }) {
       ptr.want = 1
     }
     const onLeave = () => (ptr.want = 0)
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (!reduced) {
-      host.addEventListener('pointermove', onMove)
-      host.addEventListener('pointerleave', onLeave)
-      host.addEventListener('pointercancel', onLeave)
-    }
-
+    const reduced = prefersReducedMotion()
+    const stopPointer = reduced ? () => {} : listenPointer(host, onMove, onLeave)
     const stopLoop = runLoop(host, step, draw, reduced)
 
     return () => {
       stopLoop()
-      host.removeEventListener('pointermove', onMove)
-      host.removeEventListener('pointerleave', onLeave)
-      host.removeEventListener('pointercancel', onLeave)
+      stopPointer()
       redrawRef.current = () => {}
     }
   }, [])

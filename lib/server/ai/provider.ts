@@ -59,6 +59,12 @@ function trim(node: unknown, isMap = false): unknown {
 export const toModelSchema = (schema: z.ZodType) =>
   trim(z.toJSONSchema(schema, { unrepresentable: 'any' }))
 
+/** How a failed model call is logged: unparseable JSON, a timeout, or any other error. */
+function failureOutcome(e: unknown) {
+  if (e instanceof SyntaxError) return 'invalid_json'
+  return e instanceof Error && /abort|timeout/i.test(e.name + e.message) ? 'timeout' : 'error'
+}
+
 /**
  * Shared call policy for every provider: call, JSON-parse, Zod-validate; on a bad answer one retry with the problem
  * appended; then 502. Each attempt gets at most what is left of the request deadline; timeouts and 429s are not retried.
@@ -98,12 +104,7 @@ export async function generateValidated<T>(
         .map((i) => `${i.path.join('.') || 'root'}: ${i.message}`)
         .join('; ')
     } catch (e) {
-      outcome =
-        e instanceof SyntaxError
-          ? 'invalid_json'
-          : e instanceof Error && /abort|timeout/i.test(e.name + e.message)
-            ? 'timeout'
-            : 'error'
+      outcome = failureOutcome(e)
       status =
         typeof (e as { status?: unknown }).status === 'number'
           ? (e as { status: number }).status

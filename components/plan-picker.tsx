@@ -37,6 +37,54 @@ function PlanRow({ slug, title, eventType, date, note, onChoose }: RowProps) {
   )
 }
 
+type Choose = (slug: string, title: string) => void
+
+/** Plans made in this browser, newest first, or a nudge to start one. */
+function YourPlans({ plans, onChoose }: { plans: LocalPlan[]; onChoose: Choose }) {
+  return (
+    <section aria-labelledby="picker-mine">
+      <h3 id="picker-mine" className="eyebrow">
+        Made in this browser
+      </h3>
+      {plans.length > 0 && (
+        <ul className="picker-list">
+          {plans.map((p) => (
+            <PlanRow key={p.slug} {...p} onChoose={onChoose} />
+          ))}
+        </ul>
+      )}
+      {!plans.length && (
+        <p className="picker-empty">
+          No plans yet. <Link href="/create">Start one in about two minutes</Link>
+        </p>
+      )}
+    </section>
+  )
+}
+
+/** The three read-only samples. Their dates move forward on the server, so no date is shown. */
+function SamplePlans({ onChoose }: { onChoose: Choose }) {
+  return (
+    <section aria-labelledby="picker-samples">
+      <h3 id="picker-samples" className="eyebrow">
+        Sample plans
+      </h3>
+      <ul className="picker-list">
+        {(Object.keys(samples) as EventType[]).map((k) => (
+          <PlanRow
+            key={k}
+            slug={`demo-${k}`}
+            title={samples[k].title}
+            eventType={k}
+            note="Sample"
+            onChoose={onChoose}
+          />
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 /**
  * "Your plans" button and dialog: the plans made in this browser and the three samples. Choosing one shows the
  * loading screen straight away and opens the plan (the plan page keeps the same screen until it has loaded).
@@ -85,41 +133,8 @@ export function PlanPicker() {
             </button>
           </div>
 
-          <section aria-labelledby="picker-mine">
-            <h3 id="picker-mine" className="eyebrow">
-              Made in this browser
-            </h3>
-            {plans.length ? (
-              <ul className="picker-list">
-                {plans.map((p) => (
-                  <PlanRow key={p.slug} {...p} onChoose={choose} />
-                ))}
-              </ul>
-            ) : (
-              <p className="picker-empty">
-                No plans yet. <Link href="/create">Start one in about two minutes</Link>
-              </p>
-            )}
-          </section>
-
-          <section aria-labelledby="picker-samples">
-            <h3 id="picker-samples" className="eyebrow">
-              Sample plans
-            </h3>
-            <ul className="picker-list">
-              {(Object.keys(samples) as EventType[]).map((k) => (
-                // Sample dates are moved forward on the server, so the list shows no date for them.
-                <PlanRow
-                  key={k}
-                  slug={`demo-${k}`}
-                  title={samples[k].title}
-                  eventType={k}
-                  note="Sample"
-                  onChoose={choose}
-                />
-              ))}
-            </ul>
-          </section>
+          <YourPlans plans={plans} onChoose={choose} />
+          <SamplePlans onChoose={choose} />
 
           <Link className="text-btn" href="/plans">
             Manage plans on this device <ChevronRight aria-hidden />

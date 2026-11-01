@@ -83,7 +83,7 @@ async function main() {
     const ok = p95(xs) <= (budgets[name] ?? Infinity)
     over ||= !ok
     console.log(
-      `${name.padEnd(9)} ${sorted[Math.floor(sorted.length / 2)]!.toFixed(0).padStart(6)}   ${p95(xs).toFixed(0).padStart(6)}   ${String(budgets[name]).padStart(6)}   ${ok ? 'yes' : 'NO'}`,
+      `${name.padEnd(9)} ${(sorted[Math.floor(sorted.length / 2)] ?? 0).toFixed(0).padStart(6)}   ${p95(xs).toFixed(0).padStart(6)}   ${String(budgets[name]).padStart(6)}   ${ok ? 'yes' : 'NO'}`,
     )
   }
   if (over) process.exit(1)

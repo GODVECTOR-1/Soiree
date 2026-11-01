@@ -53,7 +53,7 @@ function absorb(lines: BudgetLine[], diff: number, type: EventType, total: numbe
   const open = out.filter((l) => !l.isPriority)
   if (diff > 0) {
     const takers = open.filter((l) => flexOf(type, l) === 'flexible')
-    const pool = takers.length ? takers : open.length ? open : out
+    const pool = [takers, open].find((group) => group.length) ?? out
     shift(pool, distribute(diff, amountsOf(pool)))
     return { lines: out, floorsBroken: false }
   }
@@ -121,7 +121,7 @@ function budgetChange(input: PlanInput, current: PlanVersion, value: number): Sc
     // Priorities take 60% of new money; the rest spreads by size.
     const pri = lines.filter((l) => l.isPriority)
     const rest = lines.filter((l) => !l.isPriority)
-    const toPri = pri.length && rest.length ? Math.round(extra * 0.6) : pri.length ? extra : 0
+    const toPri = priorityShare(extra, pri.length, rest.length)
     shift(pri, distribute(toPri, amountsOf(pri)))
     shift(rest, distribute(extra - toPri, amountsOf(rest)))
     return finish(current, { lines, total, label, patch: { totalBudget: total } })
@@ -136,13 +136,20 @@ function budgetChange(input: PlanInput, current: PlanVersion, value: number): Sc
   })
 }
 
+/** New money for priorities: 60% when other lines share it, all of it when every line is a priority. */
+function priorityShare(extra: number, priorities: number, others: number) {
+  if (!priorities) return 0
+  return others ? Math.round(extra * 0.6) : extra
+}
+
 function guestChange(input: PlanInput, current: PlanVersion, wanted: number): ScenarioResult {
   const guests = Math.min(5000, Math.max(1, Math.round(wanted)))
   const ratio = guests / input.guestCount
   const total = current.budgetTotal
   const driven = (l: BudgetLine) => {
     const t = templateFor(input.eventType, l.category)
-    return t?.perGuest ? ratio : t?.flex === 'semi' ? 1 + (ratio - 1) / 2 : null
+    if (t?.perGuest) return ratio
+    return t?.flex === 'semi' ? 1 + (ratio - 1) / 2 : null
   }
   // Per-guest lines scale fully, semi lines by half; the rest absorb the difference. Total is unchanged.
   const lines = current.lines.map((l) => ({

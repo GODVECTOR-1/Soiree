@@ -18,14 +18,16 @@ function fold(line: string) {
   return parts.join('\r\n ')
 }
 
-function allDay(
-  uid: string,
-  date: string,
-  summary: string,
-  description: string,
-  stamp: string,
-  remind: boolean,
-) {
+type AllDayEvent = {
+  uid: string
+  date: string
+  summary: string
+  description: string
+  stamp: string
+  remind: boolean
+}
+
+function allDay({ uid, date, summary, description, stamp, remind }: AllDayEvent) {
   return [
     'BEGIN:VEVENT',
     `UID:${uid}`,
@@ -65,27 +67,27 @@ export function toIcs(opts: {
     'PRODID:-//Soiree//Event plan//EN',
     'CALSCALE:GREGORIAN',
     `X-WR-CALNAME:${esc(input.title)}`,
-    ...allDay(
-      `${uid}-event@soiree`,
-      input.date,
-      input.title,
-      `${input.guestCount} guests in ${input.city}`,
+    ...allDay({
+      uid: `${uid}-event@soiree`,
+      date: input.date,
+      summary: input.title,
+      description: `${input.guestCount} guests in ${input.city}`,
       stamp,
-      true,
-    ),
+      remind: true,
+    }),
   ]
   for (const t of tasks) {
     if (t.done) continue
     const due = t.offsetDays === undefined ? today : addDays(input.date, -t.offsetDays)
     lines.push(
-      ...allDay(
-        `${uid}-${t.id}@soiree`,
-        due < today ? today : due,
-        t.title,
-        `For ${input.title}`,
+      ...allDay({
+        uid: `${uid}-${t.id}@soiree`,
+        date: due < today ? today : due,
+        summary: t.title,
+        description: `For ${input.title}`,
         stamp,
-        true,
-      ),
+        remind: true,
+      }),
     )
   }
   lines.push('END:VCALENDAR')

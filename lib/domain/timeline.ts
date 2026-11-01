@@ -118,18 +118,16 @@ function taskSeeds(input: PlanInput): TaskSeed[] {
   return [...seeds, ...needSeeds(input)]
 }
 
+/** Phase by days before the event: the first entry whose minimum the offset reaches. */
+const PHASE_STARTS: [minDays: number, label: string][] = [
+  [270, '12 months out'],
+  [150, '6 months out'],
+  [60, '3 months out'],
+  [8, '1 month out'],
+  [1, 'Final week'],
+]
 const phaseFor = (offset: number) =>
-  offset >= 270
-    ? '12 months out'
-    : offset >= 150
-      ? '6 months out'
-      : offset >= 60
-        ? '3 months out'
-        : offset >= 8
-          ? '1 month out'
-          : offset >= 1
-            ? 'Final week'
-            : 'Day of'
+  PHASE_STARTS.find(([minDays]) => offset >= minDays)?.[1] ?? 'Day of'
 const PHASE_ORDER = [
   'This week',
   '12 months out',

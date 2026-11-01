@@ -21,6 +21,21 @@ const whole = (v: number | undefined, min: number, max: number, message: string)
   return v
 }
 
+function guestScenario(input: PlanInput, value: number | undefined): Scenario {
+  const guests = whole(value, 1, 5000, 'Guest count must be between 1 and 5,000.')
+  if (guests === input.guestCount) throw errors.validation('That is already your guest count.')
+  return { kind: 'guest_change', guests }
+}
+
+function dateScenario(input: PlanInput, value: number | undefined, today: string): Scenario {
+  const days = whole(value, -365, 365, 'Move the date by 1 to 365 days.')
+  const date = addDays(input.date, days)
+  if (date < today) throw errors.validation('The new date must be today or later.')
+  if (date < input.planningStart)
+    throw errors.validation('The new date must be after planning starts.')
+  return { kind: 'date_change', days, today }
+}
+
 /** Validate a scenario's numbers and turn it into a domain scenario. 400 for bad values, 422 for unsupported. */
 function toScenario(input: PlanInput, s: Mapped, today: string): Scenario {
   switch (s.kind) {
@@ -29,23 +44,14 @@ function toScenario(input: PlanInput, s: Mapped, today: string): Scenario {
         kind: 'budget_change',
         value: whole(s.value, -50, 100, 'Budget changes must be a whole percent from -50 to 100.'),
       }
-    case 'guest_change': {
-      const guests = whole(s.value, 1, 5000, 'Guest count must be between 1 and 5,000.')
-      if (guests === input.guestCount) throw errors.validation('That is already your guest count.')
-      return { kind: 'guest_change', guests }
-    }
+    case 'guest_change':
+      return guestScenario(input, s.value)
     case 'venue_cancelled':
       if (input.eventType === 'community')
         throw errors.unsupported("That scenario doesn't apply to this event type.")
       return { kind: 'venue_cancelled', today }
-    case 'date_change': {
-      const days = whole(s.value, -365, 365, 'Move the date by 1 to 365 days.')
-      const date = addDays(input.date, days)
-      if (date < today) throw errors.validation('The new date must be today or later.')
-      if (date < input.planningStart)
-        throw errors.validation('The new date must be after planning starts.')
-      return { kind: 'date_change', days, today }
-    }
+    case 'date_change':
+      return dateScenario(input, s.value, today)
     case 'reprioritize': {
       const problem = priorityError(input.eventType, s.priorities ?? [])
       if (problem) throw errors.validation(problem)

@@ -87,3 +87,10 @@ export function todayIso() {
   const d = new Date()
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+
+/** Countdown copy for the plan header: the big value and its caption. */
+export function countdown(days: number): { value: string; label: string } {
+  if (days > 0) return { value: String(days), label: 'days to go' }
+  if (days === 0) return { value: 'Today', label: 'is the day' }
+  return { value: 'Done', label: 'this one has passed' }
+}

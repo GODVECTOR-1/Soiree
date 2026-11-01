@@ -44,13 +44,14 @@ function answer(facts: Json, question: string) {
 function mapCustom(text: string) {
   const n = Number(/-?\d+/.exec(text)?.[0] ?? NaN)
   if (/venue/i.test(text) && /cancel/i.test(text)) return { kind: 'venue_cancelled' }
-  if (/budget/i.test(text) && Number.isFinite(n))
+  if (!Number.isFinite(n)) return { kind: 'unsupported' } // every other scenario needs a number
+  if (/budget/i.test(text))
     return {
       kind: 'budget_change',
       value: /cut|less|lower|reduce|down/i.test(text) ? -Math.abs(n) : n,
     }
-  if (/guest/i.test(text) && Number.isFinite(n)) return { kind: 'guest_change', value: n }
-  if (/(postpone|move|delay).*(day|week)/i.test(text) && Number.isFinite(n))
+  if (/guest/i.test(text)) return { kind: 'guest_change', value: n }
+  if (/(postpone|move|delay).*(day|week)/i.test(text))
     return { kind: 'date_change', value: /week/i.test(text) ? n * 7 : n }
   return { kind: 'unsupported' }
 }

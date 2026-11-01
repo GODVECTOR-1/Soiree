@@ -60,19 +60,59 @@ export function togglePriority(priorities: readonly string[], item: string): str
 
 export type BasicsField = 'title' | 'city' | 'date' | 'planningStart' | 'guestCount' | 'totalBudget'
 
+type Check = (p: PlanInput, today: string) => string | undefined
+
+const wholeBetween = (n: number, min: number, max: number) =>
+  Number.isInteger(n) && n >= min && n <= max
+
+function dateError(p: PlanInput, today: string) {
+  if (!p.date) return 'Pick the event date.'
+  if (p.date < today) return 'The event date must be today or later.'
+}
+
+function planningStartError(p: PlanInput) {
+  if (!p.planningStart) return 'Pick when planning starts.'
+  if (p.date && p.planningStart > p.date) return 'Planning must start on or before the event.'
+}
+
+/** One check per basics field, in form order (the first field with an error gets focus). */
+const basicsChecks: [BasicsField, Check][] = [
+  ['title', (p) => (p.title.trim() ? undefined : 'Give your celebration a name.')],
+  ['city', (p) => (p.city.trim() ? undefined : 'Add the city, so costs fit the place.')],
+  ['date', dateError],
+  ['planningStart', planningStartError],
+  [
+    'guestCount',
+    (p) =>
+      wholeBetween(p.guestCount, 1, 5000) ? undefined : 'Guests must be between 1 and 5,000.',
+  ],
+  [
+    'totalBudget',
+    (p) =>
+      wholeBetween(p.totalBudget, 1, Infinity)
+        ? undefined
+        : 'Enter a total budget in whole numbers.',
+  ],
+]
+
 /** Field-level checks for the wizard's basics step, in plain language. Empty when everything is valid. */
-export function basicsErrors(p: PlanInput, today: string): Partial<Record<BasicsField, string>> {
-  const errors: Partial<Record<BasicsField, string>> = {}
-  if (!p.title.trim()) errors.title = 'Give your celebration a name.'
-  if (!p.city.trim()) errors.city = 'Add the city, so costs fit the place.'
-  if (!p.date) errors.date = 'Pick the event date.'
-  else if (p.date < today) errors.date = 'The event date must be today or later.'
-  if (!p.planningStart) errors.planningStart = 'Pick when planning starts.'
-  else if (p.date && p.planningStart > p.date)
-    errors.planningStart = 'Planning must start on or before the event.'
-  if (!Number.isInteger(p.guestCount) || p.guestCount < 1 || p.guestCount > 5000)
-    errors.guestCount = 'Guests must be between 1 and 5,000.'
-  if (!Number.isInteger(p.totalBudget) || p.totalBudget < 1)
-    errors.totalBudget = 'Enter a total budget in whole numbers.'
+export function basicsErrors(p: PlanInput, today: string): BasicsErrors {
+  const errors: BasicsErrors = {}
+  for (const [field, check] of basicsChecks) {
+    const message = check(p, today)
+    if (message) errors[field] = message
+  }
   return errors
+}
+
+export type BasicsErrors = Partial<Record<BasicsField, string>>
+
+/**
+ * What stops the wizard leaving `step`: field errors on the basics (step 2), or a message when no priority is picked
+ * (step 3). Both empty means the step is complete.
+ */
+export function stepProblems(step: number, plan: PlanInput, today: string) {
+  const fields: BasicsErrors = step === 2 ? basicsErrors(plan, today) : {}
+  const message = step === 3 && !plan.priorities.length ? 'Choose at least one priority.' : ''
+  return { fields, message }
 }

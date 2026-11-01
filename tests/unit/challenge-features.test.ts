@@ -7,6 +7,8 @@ import { clock, dayOfSchedule } from '@/lib/domain/dayof'
 import { toIcs } from '@/lib/domain/calendar'
 import { customVendor, patchVendor, quoteCheck } from '@/lib/domain/vendors'
 import { applyAction, mergeProgress } from '@/lib/domain/actions'
+import { nextTasks, savedFirst, vendorProgress } from '@/lib/domain/overview'
+import { countdown } from '@/lib/format'
 
 // The brief's required features beyond the core plan: task priority labels, reminders, a day-of schedule, and a
 // vendor checklist where users add vendors, record contacts and track quotes.
@@ -210,5 +212,50 @@ describe('vendor checklist: your own vendors, contacts and quotes', () => {
     expect(venue).toMatchObject({ status: 'not_started' })
     expect(venue?.contact).toBeUndefined()
     expect(venue?.quote).toBeUndefined()
+  })
+})
+
+describe('overview at a glance', () => {
+  const v = previewVersion(wedding, TODAY)
+
+  it('lists high-priority open tasks first, then calendar order, skipping done ones', () => {
+    const tasks = nextTasks(v, wedding)
+    expect(tasks).toHaveLength(4)
+    const levels = tasks.map((t) => taskPriority(t, wedding).level)
+    expect(levels).toEqual(
+      [...levels].sort(
+        (a, b) => ['high', 'medium', 'low'].indexOf(a) - ['high', 'medium', 'low'].indexOf(b),
+      ),
+    )
+    const first = tasks[0]?.id ?? ''
+    const done = applyAction(wedding, v, { type: 'task', id: first }).version
+    expect(nextTasks(done, wedding).map((t) => t.id)).not.toContain(first)
+  })
+
+  it('counts vendor progress, flags over-range quotes, and suggests priority vendors next', () => {
+    const vendors = v.vendors.map((x, i) =>
+      i === 0
+        ? { ...x, status: 'booked' as const }
+        : i === 1
+          ? { ...x, status: 'quote_received' as const, quote: x.estHigh + 1 }
+          : x,
+    )
+    const p = vendorProgress({ ...v, vendors }, wedding)
+    expect(p).toMatchObject({ total: vendors.length, booked: 1, moving: 1 })
+    expect(p.overQuotes.map((x) => x.id)).toEqual([vendors[1]?.id])
+    expect(p.next.map((x) => x.status)).not.toContain('booked')
+    expect(wedding.priorities).toContain(p.next[0]?.category)
+  })
+
+  it('puts saved ideas first without mutating the plan', () => {
+    const ideas = v.ideas.map((x, i) => ({ ...x, saved: i === 5 }))
+    expect(savedFirst(ideas)[0]?.id).toBe(ideas[5]?.id)
+    expect(ideas[0]?.saved).toBe(false)
+  })
+
+  it('counts down in words', () => {
+    expect(countdown(105)).toEqual({ value: '105', label: 'days to go' })
+    expect(countdown(0)).toEqual({ value: 'Today', label: 'is the day' })
+    expect(countdown(-2)).toEqual({ value: 'Done', label: 'this one has passed' })
   })
 })
