@@ -1,0 +1,32 @@
+pmOnFail: ignore
+
+minimumReleaseAgeExclude:
+  - '@next/*'
+  - next
+
+# Patch/minor bumps for transitive advisories (pnpm audit --prod --audit-level high).
+overrides:
+  brace-expansion@>=4 <5.0.11: ^5.0.11
+  js-yaml@>=4 <4.3.2: ^4.3.2
+  fast-uri@>=3 <3.1.7: ^3.1.7
+  ip-address@<10.3.1: ^10.3.1
+  nanoid@<3.3.18: ^3.3.18
+  browserslist@<4.28.7: ^4.28.7
+  undici@>=7 <7.30.1: ^7.30.1
+  source-map-js@<1.2.2: ^1.2.2
+  proxy-addr@<2.0.8: ^2.0.8
+  '@modelcontextprotocol/sdk@<1.32.0': ^1.32.0
+  body-parser@>=2 <2.4.0: ^2.4.0
+
+auditConfig:
+  # zod@3 is pulled only by the shadcn CLI (kept for importing components; never bundled or run by the app).
+  # The app itself uses zod ^4.6.7, which is patched. No zod 3.x fix exists.
+  ignoreGhsas:
+    - GHSA-mrhx-c7xc-m3w5
+
+# Install scripts: allow the two native-binary helpers the toolchain expects; deny the rest (not needed at runtime).
+allowBuilds:
+  esbuild: true
+  unrs-resolver: true
+  '@google/genai': false
+  protobufjs: false
